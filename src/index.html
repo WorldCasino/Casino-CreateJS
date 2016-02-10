@@ -8,26 +8,35 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 
-	<title>Some title</title>
+	<title>CreateJS</title>
 
-	<link rel="shortcut icon" href="/img/favicon/favicon.ico" type="image/x-icon">
-	<link rel="apple-touch-icon" href="/img/favicon/apple-touch-icon.png">
-	<link rel="apple-touch-icon" sizes="72x72" href="/img/favicon/apple-touch-icon-72x72.png">
-	<link rel="apple-touch-icon" sizes="114x114" href="/img/favicon/apple-touch-icon-114x114.png">
+	<link rel="shortcut icon" href="img/favicon/favicon.ico" type="image/x-icon">
+	<link rel="apple-touch-icon" href="img/favicon/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="img/favicon/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="img/favicon/apple-touch-icon-114x114.png">
 
-	<link rel="stylesheet" href="/main.css">
+	<link rel="stylesheet" href="main.css">
+
+	<style>
+		#demoCanvas {
+			display: block;
+			margin: 50px auto;
+			border: 1px solid #000;
+		}
+	</style>
 
 </head>
 
-<body>
+<body onload = "init();">
+
+	<canvas id="demoCanvas" width="500" height="300"></canvas>
+	<button onclick="spin();">Spin</button>
+	<button onclick="stop();">Stop</button>
+
 
 	<!-- rigger -->
 		<!-- To include some template use //= assets/templates/<name>.html -->
 	<!-- /rigger -->
-
-	<div class="loader">
-		<div class="loader_inner"></div>
-	</div>
 
 	<!--[if lt IE 9]>
 	<script src="https://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.4.1/es5-shim.min.js"></script>
@@ -36,7 +45,71 @@
 	<![endif]-->
 
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
-	<script src="/main.js"></script>
+	<script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
+	<script src="https://code.createjs.com/tweenjs-0.6.2.min.js"></script>
+	<script src="main.js"></script>
+	<script>
+		var stage, row;
+		function init() {
+			stage = new createjs.Stage("demoCanvas");
+
+			var redCircle = new createjs.Shape();
+			redCircle.graphics.beginFill("red").drawCircle(0, 0, 50);
+			redCircle.x = 50;
+			redCircle.y = 50;
+			var blueCircle = new createjs.Shape();
+			blueCircle.graphics.beginFill("blue").drawCircle(0, 0, 50);
+			blueCircle.x = 50;
+			blueCircle.y = 150;
+			var greenCircle = new createjs.Shape();
+			greenCircle.graphics.beginFill("green").drawCircle(0, 0, 50);
+			greenCircle.x = 50;
+			greenCircle.y = 250;
+			var newredCircle = new createjs.Shape();
+			newredCircle.graphics.beginFill("red").drawCircle(0, 0, 50);
+			newredCircle.x = 50;
+			newredCircle.y = -50;
+			var newblueCircle = new createjs.Shape();
+			newblueCircle.graphics.beginFill("blue").drawCircle(0, 0, 50);
+			newblueCircle.x = 50;
+			newblueCircle.y = -150;
+			var newgreenCircle = new createjs.Shape();
+			newgreenCircle.graphics.beginFill("green").drawCircle(0, 0, 50);
+			newgreenCircle.x = 50;
+			newgreenCircle.y = -250;
+			row = new createjs.Container();
+			row.x = stage.canvas.width - 100;
+			row.y = 0;
+			row.addChild(redCircle, blueCircle, greenCircle, newredCircle, newblueCircle, newgreenCircle);
+			stage.addChild(row);
+			stage.update();
+		}
+		function spin() {
+			console.log(row);
+			createjs.Tween.get(row, { loop: false })
+					.to({ y: stage.canvas.height }, 150, createjs.Ease.linear)
+					.to({ y: 0 }, 200, createjs.Ease.linear)
+					.to({ y: stage.canvas.height }, 150, createjs.Ease.linear)
+					.to({ y: 0 }, 200, createjs.Ease.linear)
+					.to({ y: stage.canvas.height }, 150, createjs.Ease.linear)
+					.to({ y: 0 }, 200, createjs.Ease.linear)
+					.to({ y: stage.canvas.height }, 150, createjs.Ease.linear)
+					.to({ y: 0 }, 200, createjs.Ease.linear)
+					.to({ y: stage.canvas.height }, 1000, createjs.Ease.bounceOut)
+					.wait(1000)
+					;
+
+			createjs.Ticker.setFPS(60);
+			createjs.Ticker.addEventListener("tick", stage);
+		}
+		function tickHandler () {
+			console.log(createjs.Ticker.getMeasuredFPS());
+		}
+		function stop() {
+			createjs.Tween.removeTweens(row);
+			console.log(row);
+		}
+	</script>
 
 </body>
 </html>
