@@ -23,7 +23,7 @@ var path = {
         fonts: 'build/fonts/'
     },
     src: {
-        html: 'src/index.html',
+        html: 'src/*.html',
         js: 'src/assets/js/main.js',
         style: 'src/assets/scss/main.scss',
         css: './src/assets/css/main.css',

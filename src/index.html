@@ -18,7 +18,7 @@
 	<link rel="stylesheet" href="main.css">
 
 	<style>
-		#demoCanvas {
+		#canvas {
 			display: block;
 			margin: 50px auto;
 			border: 1px solid #000;
@@ -29,9 +29,9 @@
 
 <body onload = "init();">
 
-	<canvas id="demoCanvas" width="500" height="300"></canvas>
+	<canvas id="canvas" width="500" height="300"></canvas>
 	<button onclick="spin();">Spin</button>
-	<button onclick="stop();">Stop</button>
+	<a href="test.html" target="_blank">Test</a>
 
 
 	<!-- rigger -->
@@ -48,68 +48,6 @@
 	<script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
 	<script src="https://code.createjs.com/tweenjs-0.6.2.min.js"></script>
 	<script src="main.js"></script>
-	<script>
-		var stage, row;
-		function init() {
-			stage = new createjs.Stage("demoCanvas");
-
-			var redCircle = new createjs.Shape();
-			redCircle.graphics.beginFill("red").drawCircle(0, 0, 50);
-			redCircle.x = 50;
-			redCircle.y = 50;
-			var blueCircle = new createjs.Shape();
-			blueCircle.graphics.beginFill("blue").drawCircle(0, 0, 50);
-			blueCircle.x = 50;
-			blueCircle.y = 150;
-			var greenCircle = new createjs.Shape();
-			greenCircle.graphics.beginFill("green").drawCircle(0, 0, 50);
-			greenCircle.x = 50;
-			greenCircle.y = 250;
-			var newredCircle = new createjs.Shape();
-			newredCircle.graphics.beginFill("red").drawCircle(0, 0, 50);
-			newredCircle.x = 50;
-			newredCircle.y = -50;
-			var newblueCircle = new createjs.Shape();
-			newblueCircle.graphics.beginFill("blue").drawCircle(0, 0, 50);
-			newblueCircle.x = 50;
-			newblueCircle.y = -150;
-			var newgreenCircle = new createjs.Shape();
-			newgreenCircle.graphics.beginFill("green").drawCircle(0, 0, 50);
-			newgreenCircle.x = 50;
-			newgreenCircle.y = -250;
-			row = new createjs.Container();
-			row.x = stage.canvas.width - 100;
-			row.y = 0;
-			row.addChild(redCircle, blueCircle, greenCircle, newredCircle, newblueCircle, newgreenCircle);
-			stage.addChild(row);
-			stage.update();
-		}
-		function spin() {
-			console.log(row);
-			createjs.Tween.get(row, { loop: false })
-					.to({ y: stage.canvas.height }, 150, createjs.Ease.linear)
-					.to({ y: 0 }, 200, createjs.Ease.linear)
-					.to({ y: stage.canvas.height }, 150, createjs.Ease.linear)
-					.to({ y: 0 }, 200, createjs.Ease.linear)
-					.to({ y: stage.canvas.height }, 150, createjs.Ease.linear)
-					.to({ y: 0 }, 200, createjs.Ease.linear)
-					.to({ y: stage.canvas.height }, 150, createjs.Ease.linear)
-					.to({ y: 0 }, 200, createjs.Ease.linear)
-					.to({ y: stage.canvas.height }, 1000, createjs.Ease.bounceOut)
-					.wait(1000)
-					;
-
-			createjs.Ticker.setFPS(60);
-			createjs.Ticker.addEventListener("tick", stage);
-		}
-		function tickHandler () {
-			console.log(createjs.Ticker.getMeasuredFPS());
-		}
-		function stop() {
-			createjs.Tween.removeTweens(row);
-			console.log(row);
-		}
-	</script>
 
 </body>
 </html>

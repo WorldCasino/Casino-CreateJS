@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!--><html lang="en"> <!--<![endif]-->
+
+<head>
+
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+	<title>CreateJS</title>
+
+	<link rel="shortcut icon" href="img/favicon/favicon.ico" type="image/x-icon">
+	<link rel="apple-touch-icon" href="img/favicon/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="img/favicon/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="img/favicon/apple-touch-icon-114x114.png">
+
+	<link rel="stylesheet" href="main.css">
+
+	<style>
+		#testCanvas {
+			display: block;
+			margin: 50px auto;
+			border: 1px solid #000;
+		}
+	</style>
+
+</head>
+
+<body onload = "init();">
+
+	<canvas id="testCanvas" width="500" height="300"></canvas>
+
+	<a href="test.html" target="_blank">Test</a>
+
+
+	<!-- rigger -->
+		<!-- To include some template use //= assets/templates/<name>.html -->
+	<!-- /rigger -->
+
+	<!--[if lt IE 9]>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.4.1/es5-shim.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.22/require.min.js"></script>
+	<![endif]-->
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
+	<script src="https://code.createjs.com/tweenjs-0.6.2.min.js"></script>
+  <script src="https://code.createjs.com/preloadjs-0.6.2.min.js"></script>
+	<script src="main.js"></script>
+	<script>
+  var testStage;
+    function init() {
+      testStage = new createjs.Stage("testCanvas");
+      var img = new createjs.Bitmap("img/fav-1.png");
+      img.x = img.y = 50;
+      var preload = new createjs.LoadQueue();
+      preload.addEventListener("fileload", function(event){
+        testStage.update();
+      });
+      preload.loadFile("img/fav-1.png");
+      preload.loadFile("img/sprite-1.png");
+      preload.loadFile("img/sprite-2.png");
+
+      testStage.enableMouseOver();
+      img.cursor = "pointer";
+      img.shadow = new createjs.Shadow("#000000", 5, 5, 10);
+      var graph = new createjs.Graphics();
+      graph.setStrokeStyle(1);
+      graph.beginStroke("#000000");
+      graph.beginFill("red");
+      graph.drawPolyStar(0, 0, 70, 8, 0.8, -67);
+      var g = new createjs.Shape(graph);
+      g.x = g.y = 200;
+
+
+      createjs.Ticker.on("tick", handleTick);
+      function handleTick(event) {
+          testStage.update(event);
+      }
+
+      var mc = new createjs.MovieClip(null, 0, true, {start:20});
+      testStage.addChild(mc);
+
+      var child1 = new createjs.Shape(
+        new createjs.Graphics().beginFill("#999999")
+        .drawCircle(30,30,30));
+      var child2 = new createjs.Shape(
+          new createjs.Graphics().beginFill("#5a9cfb")
+          .drawCircle(30,30,30));
+
+          mc.timeline.addTween(
+            createjs.Tween.get(child1)
+            .to({x:0}).to({x:60}, 50).to({x:0}, 50));
+          mc.timeline.addTween(
+            createjs.Tween.get(child2)
+            .to({x:60}).to({x:0}, 50).to({x:60}, 50));
+
+          mc.gotoAndPlay("start");
+
+
+
+          var data1 = {
+            images: ["img/sprite-1.png"],
+            frames: {width:240, height:225},
+            animations: {
+              run: [1,50]
+            }
+          };
+          var data2 = {
+            images: ["img/sprite-2.png"],
+            frames: {width:254, height:499},
+            animations: {
+              run: [1,95]
+            }
+          };
+          var spriteSheet1 = new createjs.SpriteSheet(data1);
+          var animation1 = new createjs.Sprite(spriteSheet1, "run");
+          animation1.scaleX = animation1.scaleY = 0.4;
+          animation1.gotoAndPlay("run");
+          var spriteSheet2 = new createjs.SpriteSheet(data2);
+          var animation2 = new createjs.Sprite(spriteSheet2, "run");
+          animation2.scaleX = animation2.scaleY = 0.4;
+          animation2.x = 100;
+          animation2.gotoAndPlay("run");
+
+
+          createjs.MotionGuidePlugin.install();
+          var graphic = new createjs.Graphics();
+          // Using a Motion Guide
+         createjs.Tween.get(img).to({guide:{ path:[0,0, 0,200,200,200, 200,0,0,0] }}, 2000);
+         // Visualizing the line
+         graphic.moveTo(0,0).curveTo(0,200,200,200).curveTo(200,0,0,0);
+
+
+      console.log(animation1);
+      testStage.addChild(img, g, animation1, animation2);
+      testStage.update();
+    }
+
+	</script>
+
+</body>
+</html>
