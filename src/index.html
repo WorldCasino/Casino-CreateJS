@@ -20,18 +20,20 @@
 	<style>
 		#canvas {
 			display: block;
+			box-sizing: border-box;
 			margin: 50px auto;
 			border: 1px solid #000;
+			/*width: 80%;*/
+			max-width: 1280px;
 		}
 	</style>
 
 </head>
 
-<body onload = "init();">
+<body onload = "init();" style="text-align: center;">
 
-	<canvas id="canvas" width="500" height="300"></canvas>
-	<button id="spinButton">Spin</button>
-	<a href="test.html" target="_blank">Test</a>
+	<canvas id="canvas"></canvas>
+	<button id="spinButton" style="padding: 10px 30px;">Spin</button>
 
 
 	<!-- rigger -->
@@ -47,6 +49,7 @@
 	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
 	<script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
 	<script src="https://code.createjs.com/tweenjs-0.6.2.min.js"></script>
+	<script src="https://code.createjs.com/preloadjs-0.6.2.min.js"></script>
 	<script src="main.js"></script>
 
 </body>
