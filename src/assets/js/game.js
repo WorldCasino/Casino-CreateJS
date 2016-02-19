@@ -1,21 +1,42 @@
-var stage,
+var gameStage,
 		WIDTH = 1280,
-		HEIGHT = 720;
+		HEIGHT = 720,
+		lines = [],
+		linesLight = [],
+		winLines = [];
 
-function init() {
+function resizeCanvas(canvasID, width, percent, heightToWidth) {
+  // Берем холст
+  var bgCanvas = document.getElementById(canvasID);
+  // Изменяем его ширину чтобы он занимал 100% экрана и при этом не больше 1280 пикселей !!!!! Число 13 - это костыль(((
+  bgCanvas.style.width = (document.getElementById("game").clientWidth + 13)*percent + "px";
+  if(parseInt(bgCanvas.style.width) > width){bgCanvas.style.width = width + "px"}
+  // Делаем соответствующую высоту холста
+  bgCanvas.style.height = parseInt(bgCanvas.style.width)*heightToWidth + "px";
 
-	stage = new createjs.Stage("canvas");
+  // Проделываем все эти операции при любом изменении размеров экрана
+  $(window).on("resize", function(event) {
+    bgCanvas.style.width = document.getElementById("game").clientWidth*percent + "px";
+    if(parseInt(bgCanvas.style.width) > width){bgCanvas.style.width = width + "px"}
+    bgCanvas.style.height = parseInt(bgCanvas.style.width)*heightToWidth + "px";
+  });
+}
+
+$(document).ready(function(){
+
+	gameStage = new createjs.Stage("gameCanvas");
 	// Выставляем нужные размеры для правильной прорисовки холста
-	stage.canvas.width = WIDTH;
-	stage.canvas.height = HEIGHT;
+	gameStage.canvas.width = WIDTH;
+	gameStage.canvas.height = HEIGHT;
+
 	// Определяем параметры для линий
 	var rowNumber = 5,
-			rowWidth = stage.canvas.width/rowNumber,
+			rowWidth = gameStage.canvas.width/rowNumber,
 	// Определяем параметры для элементов
 			elementNumberAll = 60,
 			elementNumberOnScreen = 3,
 			elementWidth = rowWidth,
-			elementHeight = stage.canvas.height/elementNumberOnScreen,
+			elementHeight = gameStage.canvas.height/elementNumberOnScreen,
 	// Массивы элементов и их позиций
 			elementsMas = [],
 			elementsPositions = [],
@@ -30,40 +51,27 @@ function init() {
 			wheels = []; // Масиив линий барабана
 	// Добавляем перерисовку с FPS = 60
 	createjs.Ticker.setFPS(60);
-	createjs.Ticker.addEventListener("tick", stage);
+	createjs.Ticker.addEventListener("tick", gameStage);
 
-	function resizeCanvas() {
-		// Берем холст
-		var canvas = document.getElementById("canvas");
-		// Изменяем его ширину чтобы он занимал 80% экрана и при этом не больше 1280 пикселей
-		canvas.style.width = document.documentElement.clientWidth*0.8 + "px";
-		if(parseInt(canvas.style.width) > 1280){canvas.style.width = WIDTH + "px"}
-		// Делаем соответствующую высоту холста
-		canvas.style.height = parseInt(canvas.style.width)*0.5625 + "px";
-
-		// Проделываем все эти операции при любом изменении размеров экрана
-		window.onresize = function(event) {
-			canvas.style.width = document.documentElement.clientWidth*0.8 + "px";
-			if(parseInt(canvas.style.width) > 1280){canvas.style.width = WIDTH + "px"}
-			canvas.style.height = parseInt(canvas.style.width)*0.5625 + "px";
-		}
-	}
 	// Изменяем размер холста
-	resizeCanvas();
+	resizeCanvas("gameCanvas", WIDTH, 0.67, 0.5625);
 
 	function preloadSlots() {
-		var preload, i;
+		var preload, i, j;
 		preload = new createjs.LoadQueue();
 		preload.on("fileload", function(){
-			stage.update();
+			gameStage.update();
 		});
 		// Загружаем наши картинки
 		for(i = 1; i <= 10; i++) {
 			preload.loadFile("img/game/" + i + ".png");
 			preload.loadFile("img/game/blur/" + i + "b.png");
-			preload.loadFile("img/reelsbg.png");
-			preload.loadFile("img/gamebg.png");
 		}
+		for(j = 1; j <= 21; j++) {
+			preload.loadFile("img/Lines/Line" + j + ".png");
+			preload.loadFile("img/Lines/Line" + j + "gl.png");
+		}
+		preload.loadFile("img/reelsbg.png");
 	}
 	// Производим предварительную загрузку изображений
 	preloadSlots();
@@ -74,10 +82,64 @@ function init() {
 		slotBG.x = slotBG.y = 0;
 		slotBG.width = WIDTH;
 		slotBG.height = HEIGHT;
-		stage.addChild(slotBG);
-		stage.update();
+		gameStage.addChild(slotBG);
+		gameStage.update();
 	}
 	drawBG();
+
+	function drawLines() {
+		for(var i = 1; i <= 21; i++) {
+			var img = new createjs.Bitmap("img/Lines/Line" + i + ".png");
+			lines.push(img);
+			var imgLight = new createjs.Bitmap("img/Lines/Line" + i + "gl.png");
+			imgLight.alpha = 0;
+			imgLight.x = -10;
+			linesLight.push(imgLight);
+		}
+		lines[0].y = 332;
+		lines[1].y = 139;
+		lines[2].y = 565;
+		lines[3].y = 49;
+		lines[4].y = 94;
+		lines[5].y = 88;
+		lines[6].y = 327;
+		lines[7].y = 142;
+		lines[7].x = 85;
+		lines[8].y = 286;
+		lines[9].y = 380;
+		lines[10].y = 108;
+		lines[11].y = 105;
+		lines[11].x = 85;
+		lines[12].y = 45;
+		lines[12].x = 85;
+		lines[13].y = 105;
+		lines[13].x = 85;
+		lines[14].y = 92;
+		lines[14].x = 85;
+		lines[15].y = 98;
+		lines[15].x = 85;
+		lines[16].y = 184;
+		lines[16].x = 85;
+		lines[17].y = 137;
+		lines[18].y = 105;
+		lines[19].y = 378;
+		lines[20].y = 100;
+		lines[20].x = 105;
+		for(var j = 0; j < linesLight.length; j++) {
+			linesLight[j].y = lines[j].y - 13;
+			linesLight[j].x = lines[j].x - 10;
+		}
+	}
+	drawLines();
+
+	function showLine(number) {
+		gameStage.addChild(linesLight[number-1]);
+		gameStage.addChild(lines[number-1]);
+		gameStage.update();
+		createjs.Tween.get(linesLight[number-1], {loop: true})
+			.to({ alpha: 1 }, 1000)
+			.to({ alpha: 0 }, 1000);
+	}
 
 	function startGame(name) {
 		// Запрос по имени пользователя
@@ -191,7 +253,7 @@ function init() {
 			// Добавляем ее в линию
 			row.addChild(img);
 		}
-		stage.update();
+		gameStage.update();
 		// Возвращаем линию
 		return row;
 	}
@@ -203,9 +265,9 @@ function init() {
 			// Позиционируем их гозизонтально
 			rows[i].x = rowWidth*i;
 			// И добавляем в холст
-			stage.addChild(rows[i]);
+			gameStage.addChild(rows[i]);
 		}
-		stage.update();
+		gameStage.update();
 	}
 
 	function getNewRow(currentRow) {
@@ -232,22 +294,26 @@ function init() {
 			// Добавляем их в линию
 			row.addChild(img);
 		}
-		stage.update();
+		gameStage.update();
 		// Возвращаем линию
 		return row;
 	}
 
 	function getNewScreen() {
+		for (var j = 0; j < 21; j++) {
+			gameStage.removeChild(lines[j]);
+			gameStage.removeChild(linesLight[j]);
+		}
 		for (var i = 0; i < rowNumber; i++) {
-			stage.removeChild(rows[i])
+			gameStage.removeChild(rows[i])
 			// Создаем 5 новых линий
 			rows[i] = getNewRow(i);
 			// Позиционируем их гозизонтально
 			rows[i].x = rowWidth*i;
 			// И добавляем в холст
-			stage.addChild(rows[i]);
+			gameStage.addChild(rows[i]);
 		}
-		stage.update();
+		gameStage.update();
 	}
 
 	function getSpin() {
@@ -265,7 +331,8 @@ function init() {
 							// Забираем нужные нам индексы выпавших слотов
 							var indexes = data.Result.Indexes;
 							// Показываем выпавшие линии
-							console.log(data.Result.LinesResult);
+							winLines = data.Result.LinesResult;
+							console.log(winLines);
 							// Записываем значения конечного экрана
 							for (var i = 0; i < 5; i++){
 								nextScreen[i] = [];
@@ -289,6 +356,15 @@ function init() {
 									currentScreen[i][j] = nextScreen[i][j];
 								}
 							}
+
+							for (var i = 0; i < winLines.length; i++) {
+								var someLine = winLines[i];
+								var indexOfLine = someLine.indexOf("#");
+								var numberOfLine = someLine.substr(indexOfLine + 1);
+								if (numberOfLine != -1) {
+									setTimeout(showLine(numberOfLine), 20000);
+								}
+							}
 						}
 					});// _Roll AJAX End
 				}
@@ -296,4 +372,4 @@ function init() {
 		});// _Ready AJAX End
 	}
 
-}; // Конец функции Init()
+}); // Конец функции Init()

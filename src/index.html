@@ -18,21 +18,57 @@
 	<link rel="stylesheet" href="main.css">
 
 	<style>
-		#canvas {
+		body {
+			text-align: center;
+		}
+		#game {
+			position: relative;
+			width: 80%;
+			margin: 30px auto 0 auto;
+		}
+		#gameCanvas {
+			position: absolute;
+			z-index: 10;
+			margin-top: 6.45%;
+			left: 29.5%;
 			display: block;
 			box-sizing: border-box;
-			margin: 50px auto 20px auto;
-			border: 1px solid #000;
 			max-width: 1280px;
+		}
+		#middleCanvas {
+			position: absolute;
+			z-index: 15;
+			top: 0;
+			left: 0;
+			display: block;
+			box-sizing: border-box;
+			max-width: 1920;
+		}
+		#bgCanvas {
+			position: absolute;
+			z-index: 5;
+			top: 0;
+			left: 0;
+			display: block;
+			box-sizing: border-box;
+			max-width: 1920;
+			border: 1px solid #222;
+		}
+		#spinButton {
+			padding: 10px 30px;
 		}
 	</style>
 
 </head>
 
-<body onload = "init();" style="text-align: center;">
+<body onload="bgInit()">
 
-	<canvas id="canvas"></canvas>
-	<button id="spinButton" style="padding: 10px 30px;">Spin</button>
+	<button id="spinButton">Spin</button>
+	<div id="game">
+		<canvas id="bgCanvas"></canvas>
+		<canvas id="middleCanvas"></canvas>
+		<canvas id="gameCanvas"></canvas>
+	</div>
 
 	<!-- rigger -->
 		<!-- To include some template use //= assets/templates/<name>.html -->
@@ -48,7 +84,8 @@
 	<script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
 	<script src="https://code.createjs.com/tweenjs-0.6.2.min.js"></script>
 	<script src="https://code.createjs.com/preloadjs-0.6.2.min.js"></script>
-	<script src="main.js"></script>
+	<script src="game.js"></script>
+	<script src="bg.js"></script>
 
 </body>
 </html>
