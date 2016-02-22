@@ -1,6 +1,12 @@
-var gameStage,
+var bgStage,
+    middleStage,
+		gameStage,
+
 		WIDTH = 1280,
 		HEIGHT = 720,
+		BGWIDTH = 1920,
+    BGHEIGHT = 1080,
+
 		lines = [],
 		linesLight = [],
 		winLines = [];
@@ -24,8 +30,15 @@ function resizeCanvas(canvasID, width, percent, heightToWidth) {
 
 $(document).ready(function(){
 
+	bgStage = new createjs.Stage("bgCanvas");
+	bgStage.canvas.width = BGWIDTH;
+	bgStage.canvas.height = BGHEIGHT;
+
+	middleStage = new createjs.Stage("middleCanvas");
+	middleStage.canvas.width = BGWIDTH;
+	middleStage.canvas.height = BGHEIGHT;
+
 	gameStage = new createjs.Stage("gameCanvas");
-	// Выставляем нужные размеры для правильной прорисовки холста
 	gameStage.canvas.width = WIDTH;
 	gameStage.canvas.height = HEIGHT;
 
@@ -51,11 +64,33 @@ $(document).ready(function(){
 			wheels = []; // Масиив линий барабана
 	// Добавляем перерисовку с FPS = 60
 	createjs.Ticker.setFPS(60);
+	createjs.Ticker.addEventListener("tick", bgStage);
+	createjs.Ticker.addEventListener("tick", middleStage);
 	createjs.Ticker.addEventListener("tick", gameStage);
 
 	// Изменяем размер холста
 	resizeCanvas("gameCanvas", WIDTH, 0.67, 0.5625);
+	resizeCanvas("bgCanvas", BGWIDTH, 1, 0.5625);
+  resizeCanvas("middleCanvas", BGWIDTH, 1, 0.5625);
 
+	function preloadBG(){
+		var preload, i;
+		preload = new createjs.LoadQueue();
+		preload.on("fileload", function(){
+			bgStage.update();
+		});
+		preload.loadFile("img/gamebg.png");
+		preload.loadFile("img/mainbg.jpg");
+		preload.loadFile("img/mainfg.png");
+		preload.loadFile("img/Tuchi.png");
+		preload.loadFile("img/fonarverh2.png");
+		preload.loadFile("img/fonarverh3.png");
+		preload.loadFile("img/fonarniz.png");
+		preload.loadFile("img/spin.png");
+		preload.loadFile("img/autoplay.png");
+		preload.loadFile("img/max_bet.png");
+	}
+	preloadBG();
 	function preloadSlots() {
 		var preload, i, j;
 		preload = new createjs.LoadQueue();
@@ -77,15 +112,82 @@ $(document).ready(function(){
 	preloadSlots();
 
 	function drawBG() {
-		var slotBG;
-		slotBG = new createjs.Bitmap("img/reelsbg.png");
-		slotBG.x = slotBG.y = 0;
+		var slotBG = new createjs.Bitmap("img/reelsbg.png");
+		var mainBG = new createjs.Bitmap("img/mainbg.jpg");
+		var mainFG = new createjs.Bitmap("img/mainfg.png");
+		var tuchi = new createjs.Bitmap("img/Tuchi.png");
+		var tuman = new createjs.Bitmap("img/tuman_niz.png");
+		var gameBG = new createjs.Bitmap("img/gamebg.png");
+		var fonarNiz = new createjs.Bitmap("img/fonarniz.png");
+		var fonarVerh = new createjs.Bitmap("img/fonarverh3.png");
 		slotBG.width = WIDTH;
+		mainBG.width = gameBG.width = BGWIDTH;
 		slotBG.height = HEIGHT;
+		mainBG.height = gameBG.height = BGHEIGHT;
+		fonarNiz.x = -20; fonarNiz.y = 65;
+		fonarVerh.x = 8; fonarVerh.y = 116;
+		tuchi.x = -500;
+		tuman.x = -500; tuman.y = 600;
+
+		bgStage.addChild(mainBG, tuchi, mainFG);
+		middleStage.addChild(gameBG);
 		gameStage.addChild(slotBG);
-		gameStage.update();
+
+		createjs.Tween.get(fonarVerh, {loop: true})
+			.to({ rotation: 5 }, 1000)
+			.to({ rotation: -3 , y: 118}, 2000)
+			.to({ rotation: 0, y: 116}, 1000);
+		createjs.Tween.get(tuchi, {loop: true})
+			.to({ x: 300}, 70000)
+			.to({ x: -500}, 70000);
+		createjs.Tween.get(tuman, {loop: true})
+			.to({ x: 0}, 20000)
+			.to({ x: -500}, 20000);
+
+		// Герман
+		var germanData = {
+			images: ["img/idleGerman.png"],
+			frames: {width: 321, height: 600},
+			framerate: 24,
+			animations: {
+				stand: [0, 200]
+			}
+		};
+		var germanSheet = new createjs.SpriteSheet(germanData);
+		var germanAnimation = new createjs.Sprite(germanSheet, "stand");
+		germanAnimation.gotoAndPlay("stand");
+		germanAnimation.scaleX = 1.2; germanAnimation.scaleY = 1.2;
+		germanAnimation.x = 110; germanAnimation.y = 340;
+		bgStage.addChild(germanAnimation);
+		bgStage.addChild(tuman);
+		bgStage.addChild(fonarNiz, fonarVerh);
 	}
 	drawBG();
+
+	function drawButtons() {
+		middleStage.enableMouseOver(10);
+		var spinButton = new createjs.Bitmap("img/spin.png");
+		spinButton.x = 1141; spinButton.y = 869;
+		var autoplayButton = new createjs.Bitmap("img/autoplay.png");
+		autoplayButton.x = 945; autoplayButton.y = 920;
+		var maxBetButton = new createjs.Bitmap("img/max_bet.png");
+		maxBetButton.x = 1317; maxBetButton.y = 920;
+		middleStage.addChild(spinButton, autoplayButton, maxBetButton);
+		spinButton.on("mouseover", function(){
+			console.log("it is spin button!");
+		});
+		spinButton.on("click", function(){
+			console.log("You have clicked SPIN!");
+			getSpin();
+		});
+		autoplayButton.on("mouseover", function(){
+			console.log("it is autoplay button!");
+		});
+		maxBetButton.on("mouseover", function(){
+			console.log("it is max BEt button!");
+		});
+	}
+	drawButtons();
 
 	function drawLines() {
 		for(var i = 1; i <= 21; i++) {
@@ -132,12 +234,60 @@ $(document).ready(function(){
 	}
 	drawLines();
 
-	function showLine(number) {
+	function drawLineNumbers() {
+		var numbers = [];
+		middleStage.enableMouseOver(10);
+		for (var i = 1; i <= 22; i++) {
+			var text = new createjs.Text(i, "20px Arial", "#ddcb8c");
+			text.textBaseline = "top";
+			numbers.push(text);
+			var hit = new createjs.Shape();
+			hit.graphics.beginFill("#000").drawCircle(text.getMeasuredWidth()/2, text.getMeasuredHeight()/2, 19);
+			text.hitArea = hit;
+			text.on("mouseover", function(){
+				showLine(this.text, 0);
+				this.shadow = new createjs.Shadow("#FFFFFF", 1, 1, 2);
+			});
+			text.on("mouseout", function(){
+				gameStage.removeChild(lines[this.text - 1], linesLight[this.text - 1]);
+				this.shadow.offsetX = this.shadow.offsetY = this.shadow.blur = 0;
+			});
+		}
+		numbers[21].text = 1;
+		numbers[0].x = 549; numbers[0].y = 455;
+		numbers[1].x = 1855; numbers[1].y = 257;
+		numbers[2].x = 1855; numbers[2].y = 697;
+		numbers[3].x = 549; numbers[3].y = 165;
+		numbers[4].x = 549; numbers[4].y = 789;
+		numbers[5].x = 549; numbers[5].y = 210;
+		numbers[6].x = 550; numbers[6].y = 744;
+		numbers[7].x = 1855; numbers[7].y = 548;
+		numbers[8].x = 549; numbers[8].y = 409;
+		numbers[9].x = 542; numbers[9].y = 650;
+		numbers[10].x = 543; numbers[10].y = 303;
+		numbers[11].x = 1848; numbers[11].y = 789;
+		numbers[12].x = 1848; numbers[12].y = 165;
+		numbers[13].x = 1848; numbers[13].y = 744;
+		numbers[14].x = 1848; numbers[14].y = 212;
+		numbers[15].x = 1848; numbers[15].y = 651;
+		numbers[16].x = 1848; numbers[16].y = 304;
+		numbers[17].x = 543; numbers[17].y = 257;
+		numbers[18].x = 543; numbers[18].y = 697;
+		numbers[19].x = 543; numbers[19].y = 501;
+  	numbers[20].x = 1850; numbers[20].y = 501;
+		numbers[21].x = 1855; numbers[21].y = 455;
+		for (var i = 0; i < numbers.length; i++) {
+			middleStage.addChild(numbers[i]);
+		}
+	}
+	drawLineNumbers();
+
+	function showLine(number, opacity) {
 		gameStage.addChild(linesLight[number-1]);
 		gameStage.addChild(lines[number-1]);
 		gameStage.update();
 		createjs.Tween.get(linesLight[number-1], {loop: true})
-			.to({ alpha: 1 }, 1000)
+			.to({ alpha: opacity }, 1000)
 			.to({ alpha: 0 }, 1000);
 	}
 
@@ -174,7 +324,6 @@ $(document).ready(function(){
 													// Складываем линии в массив (здесь ошибка - линии могут быть не в нужном порядке!!!)
 													wheels.push(data);
 													if(wheels.length === 5) {
-														console.log("It is all right!");
 														// И загружаем первый экран
 														showStartScreen(wheels);
 													}
@@ -193,10 +342,10 @@ $(document).ready(function(){
 	// Инициализируем игру по имени name
 	startGame(name);
 
-	var spinButton = document.getElementById('spinButton');
-	spinButton.addEventListener("click", function() {
-		getSpin();
-	});
+	// var spinButton = document.getElementById('spinButton');
+	// spinButton.addEventListener("click", function() {
+	// 	getSpin();
+	// });
 
 	function showStartScreen(wheels) {
 
@@ -205,7 +354,6 @@ $(document).ready(function(){
 			renameLine(wheels[i]);
 		}
 
-		console.log(wheels);
 		currentScreen = getFirstPage(wheels);
 		getFirstScreen();
 
@@ -232,7 +380,9 @@ $(document).ready(function(){
 			if (line[i] === "iA") {line[i] = 8}
 			if (line[i] === "wild") {line[i] = 9}
 			if (line[i] === "scatter") {line[i] = 10}
-			if (line[i] === "sw") {line[i] = 11; line.splice(i, 0, 11, 11)}
+			if (line[i] === "sw") {line[i] = 11}
+			if (line[i] === "sw2") {line[i] = 12}
+			if (line[i] === "sw3") {line[i] = 13}
 		}
 	}
 
@@ -362,7 +512,7 @@ $(document).ready(function(){
 								var indexOfLine = someLine.indexOf("#");
 								var numberOfLine = someLine.substr(indexOfLine + 1);
 								if (numberOfLine != -1) {
-									setTimeout(showLine(numberOfLine), 20000);
+									setTimeout(showLine.bind(null, numberOfLine, 1), 3500);
 								}
 							}
 						}
