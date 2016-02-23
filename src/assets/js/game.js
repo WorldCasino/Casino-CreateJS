@@ -7,6 +7,7 @@ var bgStage,
 		BGWIDTH = 1920,
     BGHEIGHT = 1080,
 
+    linesCoords,
 		lines = [],
 		linesLight = [],
 		winLines = [];
@@ -57,10 +58,13 @@ $(document).ready(function(){
 			rows = [],
 	 		currentScreen = [],
 			nextScreen = [],
+      winRows = [],
+      numbersOfLines = [],
 			name = "SomeName", // Имя игрока
 			url = "http://192.168.0.250/JSON/SlotService.svc/", // URL сервера
 			sessionID, // ID игровой сессии
 			gameID = 0, // ID игры
+      bet = 2, // Ставка
 			wheels = []; // Масиив линий барабана
 	// Добавляем перерисовку с FPS = 60
 	createjs.Ticker.setFPS(60);
@@ -101,6 +105,7 @@ $(document).ready(function(){
 		for(i = 1; i <= 10; i++) {
 			preload.loadFile("img/game/" + i + ".png");
 			preload.loadFile("img/game/blur/" + i + "b.png");
+      preload.loadFile("img/game/win/" + i + ".png");
 		}
 		for(j = 1; j <= 21; j++) {
 			preload.loadFile("img/Lines/Line" + j + ".png");
@@ -172,19 +177,20 @@ $(document).ready(function(){
 		autoplayButton.x = 945; autoplayButton.y = 920;
 		var maxBetButton = new createjs.Bitmap("img/max_bet.png");
 		maxBetButton.x = 1317; maxBetButton.y = 920;
+    spinButton.cursor = maxBetButton.cursor = autoplayButton.cursor = "pointer";
 		middleStage.addChild(spinButton, autoplayButton, maxBetButton);
 		spinButton.on("mouseover", function(){
-			console.log("it is spin button!");
+			// console.log("it is spin button!");
 		});
 		spinButton.on("click", function(){
-			console.log("You have clicked SPIN!");
+			// console.log("You have clicked SPIN!");
 			getSpin();
 		});
 		autoplayButton.on("mouseover", function(){
-			console.log("it is autoplay button!");
+			// console.log("it is autoplay button!");
 		});
 		maxBetButton.on("mouseover", function(){
-			console.log("it is max BEt button!");
+			// console.log("it is max BEt button!");
 		});
 	}
 	drawButtons();
@@ -192,6 +198,8 @@ $(document).ready(function(){
 	function drawLines() {
 		for(var i = 1; i <= 21; i++) {
 			var img = new createjs.Bitmap("img/Lines/Line" + i + ".png");
+      img.alpha = 0;
+      gameStage.addChild(img);
 			lines.push(img);
 			var imgLight = new createjs.Bitmap("img/Lines/Line" + i + "gl.png");
 			imgLight.alpha = 0;
@@ -245,11 +253,11 @@ $(document).ready(function(){
 			hit.graphics.beginFill("#000").drawCircle(text.getMeasuredWidth()/2, text.getMeasuredHeight()/2, 19);
 			text.hitArea = hit;
 			text.on("mouseover", function(){
-				showLine(this.text, 0);
+				showLine(this.text);
 				this.shadow = new createjs.Shadow("#FFFFFF", 1, 1, 2);
 			});
 			text.on("mouseout", function(){
-				gameStage.removeChild(lines[this.text - 1], linesLight[this.text - 1]);
+				lines[this.text - 1].alpha = 0;
 				this.shadow.offsetX = this.shadow.offsetY = this.shadow.blur = 0;
 			});
 		}
@@ -282,13 +290,13 @@ $(document).ready(function(){
 	}
 	drawLineNumbers();
 
-	function showLine(number, opacity) {
-		gameStage.addChild(linesLight[number-1]);
-		gameStage.addChild(lines[number-1]);
+	function showLine(number) {
+		// gameStage.addChild(linesLight[number-1]);
+		lines[number-1].alpha = 1;
 		gameStage.update();
-		createjs.Tween.get(linesLight[number-1], {loop: true})
-			.to({ alpha: opacity }, 1000)
-			.to({ alpha: 0 }, 1000);
+		// createjs.Tween.get(linesLight[number-1], {loop: true})
+		// 	.to({ alpha: opacity }, 1000)
+		// 	.to({ alpha: 0 }, 1000);
 	}
 
 	function startGame(name) {
@@ -330,6 +338,28 @@ $(document).ready(function(){
 												}
 											});
 										}
+                    $.ajax({
+                      url: url + '_SetBet/' + sessionID + '/' + bet,
+                      dataType: 'JSONP',
+                      type: 'GET',
+                      success: function(data) {
+                        // console.log("Ответ на ставку: " + data);
+                      }
+                    });
+                    $.ajax({
+                      url: url + '_GetLines/' + sessionID,
+                      dataType: 'JSONP',
+                      type: 'GET',
+                      success: function(data) {
+                        linesCoords = data.split("|");
+                        for(var i = 0; i < linesCoords.length; i++) {
+                          linesCoords[i] = linesCoords[i].split("@");
+                          for (var j = 0; j < linesCoords[i].length; j++) {
+                            linesCoords[i][j] = linesCoords[i][j].split(",");
+                          }
+                        }
+                      }
+                    })
 									}
 								}
 							});
@@ -386,8 +416,9 @@ $(document).ready(function(){
 		}
 	}
 
-	function getFirstRow(currentRow) {
+	function getFirstRow(currentRow, subURL, opacity) {
 		var row, img, i;
+    subURL = subURL || "";
 		// Создаем новый контейнер (линию)
 		row = new createjs.Container();
 		// В каждую линию записуем по 5 картинок (3 на экране и по одной по боках)
@@ -397,9 +428,10 @@ $(document).ready(function(){
 			// Расчитываем позиции элементов по высоте (первый элемент будет за верхним краем)
 			elementsPositions[i] = elementHeight * (i - 1);
 			// Создаем нужную картинку
-			img = new createjs.Bitmap("img/game/" + elementsMas[i] + ".png");
+			img = new createjs.Bitmap("img/game/" + subURL + elementsMas[i] + ".png");
 			// Позиционируем картинку
 			img.y = elementsPositions[i];
+      img.alpha = opacity;
 			// Добавляем ее в линию
 			row.addChild(img);
 		}
@@ -411,7 +443,7 @@ $(document).ready(function(){
 	function getFirstScreen() {
 		for (var i = 0; i < rowNumber; i++) {
 			// Создаем 5 новых линий
-			rows[i] = getFirstRow(i);
+			rows[i] = getFirstRow(i, "", 1);
 			// Позиционируем их гозизонтально
 			rows[i].x = rowWidth*i;
 			// И добавляем в холст
@@ -451,11 +483,12 @@ $(document).ready(function(){
 
 	function getNewScreen() {
 		for (var j = 0; j < 21; j++) {
-			gameStage.removeChild(lines[j]);
-			gameStage.removeChild(linesLight[j]);
+			lines[j].alpha = 0;
+			// gameStage.removeChild(linesLight[j]);
 		}
 		for (var i = 0; i < rowNumber; i++) {
-			gameStage.removeChild(rows[i])
+			gameStage.removeChild(rows[i]);
+      gameStage.removeChild(winRows[i]);
 			// Создаем 5 новых линий
 			rows[i] = getNewRow(i);
 			// Позиционируем их гозизонтально
@@ -482,7 +515,9 @@ $(document).ready(function(){
 							var indexes = data.Result.Indexes;
 							// Показываем выпавшие линии
 							winLines = data.Result.LinesResult;
+              totalWin = data.Result.TotalWin;
 							console.log(winLines);
+              console.log(totalWin);
 							// Записываем значения конечного экрана
 							for (var i = 0; i < 5; i++){
 								nextScreen[i] = [];
@@ -501,25 +536,69 @@ $(document).ready(function(){
 									.to({ y: -elementsPositions[1]}, time , createjs.Ease.getBackInOut(0.5));
 							}
 							// Делаем перезапись теперешнего экрана
-							for (var i = 0; i < 5; i++) {
-								for (var j = 0; j < 5; j++) {
-									currentScreen[i][j] = nextScreen[i][j];
-								}
-							}
+              copyScreenFromTo (nextScreen, currentScreen);
 
 							for (var i = 0; i < winLines.length; i++) {
 								var someLine = winLines[i];
+                var numberOfElements = parseInt(winLines[i]);
+                // console.log(numberOfElements);
 								var indexOfLine = someLine.indexOf("#");
 								var numberOfLine = someLine.substr(indexOfLine + 1);
-								if (numberOfLine != -1) {
-									setTimeout(showLine.bind(null, numberOfLine, 1), 3500);
-								}
+                numbersOfLines[i] = [];
+                numbersOfLines[i].push(+numberOfLine, numberOfElements);
+								// if (numberOfLine != -1) {
+								// 	setTimeout(showLine.bind(null, numberOfLine, 1), 3200);
+								// }
 							}
+              if(winLines[0] !== undefined) {
+                setTimeout(showWinScreen.bind(null), 3200);
+              }
 						}
 					});// _Roll AJAX End
 				}
 			}
 		});// _Ready AJAX End
 	}
+
+  function copyScreenFromTo (nextScreen, currentScreen) {
+    var i, j;
+    for (i = 0; i < 5; i++) {
+      for (j = 0; j < 5; j++) {
+        currentScreen[i][j] = nextScreen[i][j];
+      }
+    }
+  }
+
+  function showWinScreen() {
+    for(var i = 0; i < rowNumber; i++) {
+      // gameStage.removeChild(rows[i]);
+      winRows[i] = getFirstRow(i, "win/", 0);
+      winRows[i].x = rowWidth*i;
+      gameStage.addChild(winRows[i]);
+    }
+
+    // console.log(newURL);
+    for(var i = 0; i < numbersOfLines.length; i++) {
+      var numberOfCurrentLine = numbersOfLines[i][0];
+      var numberOfCurrentElements = numbersOfLines[i][1];
+      for(var j = 0; j < numberOfCurrentElements; j++) {
+        var currentRowNumber = linesCoords[numberOfCurrentLine-1][j][0];
+        var currentElementNumber = +linesCoords[numberOfCurrentLine-1][j][1] + 1;
+        var currentElement = rows[currentRowNumber].children[currentElementNumber];
+        var currentPositionY = currentElement.y;
+        var currentURL = currentElement.image.currentSrc;
+        var currentElementImageNumber = currentURL.substr(currentURL.indexOf(".png") - 1, 1);
+        if(currentElementImageNumber){
+          var newImg = new createjs.Bitmap("img/game/win/" + currentElementImageNumber + ".png");
+          newImg.y = currentPositionY;
+          rows[currentRowNumber].children.splice(currentElementNumber, 1, newImg);
+          // console.log(currentPositionY);
+
+        }
+      }
+      showLine(numberOfCurrentLine);
+    }
+    // console.log(numbersOfLines);
+  }
 
 }); // Конец функции Init()
