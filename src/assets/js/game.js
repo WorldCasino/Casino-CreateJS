@@ -60,14 +60,18 @@ $(document).ready(function(){
 			nextScreen = [],
       winRows = [],
       numbersOfLines = [],
-			name = "SomeName", // Имя игрока
+      numbers = [],
+			name = "SomeName" + Math.random()*100, // Имя игрока
 			url = "http://192.168.0.250/JSON/SlotService.svc/", // URL сервера
 			sessionID, // ID игровой сессии
 			gameID = 0, // ID игры
       bet = 2, // Ставка
-			wheels = []; // Масиив линий барабана
+			wheels = [], // Масиив линий барабана
+      spinButton,
+      spinHovButton,
+      spinTachButton;
 	// Добавляем перерисовку с FPS = 60
-	createjs.Ticker.setFPS(60);
+	createjs.Ticker.setFPS(40);
 	createjs.Ticker.addEventListener("tick", bgStage);
 	createjs.Ticker.addEventListener("tick", middleStage);
 	createjs.Ticker.addEventListener("tick", gameStage);
@@ -84,15 +88,27 @@ $(document).ready(function(){
 			bgStage.update();
 		});
 		preload.loadFile("img/gamebg.png");
-		preload.loadFile("img/mainbg.jpg");
+		preload.loadFile("img/mainbg.png");
 		preload.loadFile("img/mainfg.png");
 		preload.loadFile("img/Tuchi.png");
 		preload.loadFile("img/fonarverh2.png");
 		preload.loadFile("img/fonarverh3.png");
 		preload.loadFile("img/fonarniz.png");
-		preload.loadFile("img/spin.png");
-		preload.loadFile("img/autoplay.png");
-		preload.loadFile("img/max_bet.png");
+		preload.loadFile("img/buttons/Spin.png");
+    preload.loadFile("img/buttons/Spin_hov.png");
+    preload.loadFile("img/buttons/Spin_tach.png");
+		preload.loadFile("img/buttons/AutoPlay.png");
+    preload.loadFile("img/buttons/AutoPlay_hov.png");
+    preload.loadFile("img/buttons/AutoPlay_tach.png");
+    preload.loadFile("img/buttons/Max_bet.png");
+    preload.loadFile("img/buttons/Max_bet_hov.png");
+    preload.loadFile("img/buttons/Max_bet_tach.png");
+    preload.loadFile("img/buttons/Minus.png");
+    preload.loadFile("img/buttons/Minus_hov.png");
+    preload.loadFile("img/buttons/Minus_tach.png");
+    preload.loadFile("img/buttons/Plus.png");
+    preload.loadFile("img/buttons/Plus_hov.png");
+    preload.loadFile("img/buttons/Plus_tach.png");
 	}
 	preloadBG();
 	function preloadSlots() {
@@ -111,14 +127,14 @@ $(document).ready(function(){
 			preload.loadFile("img/Lines/Line" + j + ".png");
 			preload.loadFile("img/Lines/Line" + j + "gl.png");
 		}
-		preload.loadFile("img/reelsbg.png");
+		preload.loadFile("img/bgwithstrings.png");
 	}
 	// Производим предварительную загрузку изображений
 	preloadSlots();
 
 	function drawBG() {
-		var slotBG = new createjs.Bitmap("img/reelsbg.png");
-		var mainBG = new createjs.Bitmap("img/mainbg.jpg");
+		var slotBG = new createjs.Bitmap("img/bgwithstrings.png");
+		var mainBG = new createjs.Bitmap("img/mainbg.png");
 		var mainFG = new createjs.Bitmap("img/mainfg.png");
 		var tuchi = new createjs.Bitmap("img/Tuchi.png");
 		var tuman = new createjs.Bitmap("img/tuman_niz.png");
@@ -133,7 +149,7 @@ $(document).ready(function(){
 		fonarVerh.x = 8; fonarVerh.y = 116;
 		tuchi.x = -500;
 		tuman.x = -500; tuman.y = 600;
-
+    slotBG.x = -16; slotBG.y = -5;
 		bgStage.addChild(mainBG, tuchi, mainFG);
 		middleStage.addChild(gameBG);
 		gameStage.addChild(slotBG);
@@ -170,43 +186,308 @@ $(document).ready(function(){
 	drawBG();
 
 	function drawButtons() {
+    var autoplayID;
+    var betText = new createjs.Text("BET", "13px Arial", "#ffffff");
+    betText.x = 628; betText.y = 867;
+    middleStage.addChild(betText);
+    var coinsText = new createjs.Text("COINS", "13px Arial", "#ffffff");
+    coinsText.x = 1752; coinsText.y = 867;
+    middleStage.addChild(coinsText);
+    var coinsValue = new createjs.Text("0.02", "bold 25px Arial", "#ffffff");
+    coinsValue.x = 1553; coinsValue.y = 942;
+    middleStage.addChild(coinsValue);
+    var coinsSum = new createjs.Text("250000", "bold 25px Arial", "#ffffff");
+    coinsSum.x = 1753; coinsSum.y = 928;
+    middleStage.addChild(coinsSum);
+    var betValue = new createjs.Text("1", "bold 25px Arial", "#ffffff");
+    betValue.x = 828; betValue.y = 942;
+    middleStage.addChild(betValue);
+
 		middleStage.enableMouseOver(10);
-		var spinButton = new createjs.Bitmap("img/spin.png");
-		spinButton.x = 1141; spinButton.y = 869;
-		var autoplayButton = new createjs.Bitmap("img/autoplay.png");
-		autoplayButton.x = 945; autoplayButton.y = 920;
-		var maxBetButton = new createjs.Bitmap("img/max_bet.png");
-		maxBetButton.x = 1317; maxBetButton.y = 920;
+		    spinButton = new createjs.Bitmap("img/buttons/Spin.png"),
+        spinHovButton = new createjs.Bitmap("img/buttons/Spin_hov.png"),
+        spinTachButton = new createjs.Bitmap("img/buttons/Spin_tach.png");
+		spinButton.x = 1140; spinButton.y = 866;
+    spinHovButton.x = 1140; spinHovButton.y = 866;
+    spinTachButton.x = 1140; spinTachButton.y = 866;
+    spinHovButton.alpha = 0;
+    spinTachButton.alpha = 0;
+    spinButton.alpha = 1;
+    spinButton.on("mouseover", function(){
+      spinButton.alpha = 0.01;
+      spinHovButton.alpha = 1;
+    });
+    spinButton.on("mouseout", function(){
+      spinButton.alpha = 1;
+      spinHovButton.alpha = 0;
+    });
+    spinButton.on("mousedown", function(){
+      spinButton.alpha = 0.01;
+      spinTachButton.alpha = 1;
+      getSpin();
+    });
+    spinButton.on("click", function(){
+      spinButton.alpha = 1;
+      spinTachButton.alpha = 0;
+    });
+    middleStage.addChild(spinButton, spinHovButton, spinTachButton);
+
+    var autoplayButton = new createjs.Bitmap("img/buttons/AutoPlay.png"),
+        autoplayHovButton = new createjs.Bitmap("img/buttons/AutoPlay_hov.png"),
+        autoplayTachButton = new createjs.Bitmap("img/buttons/AutoPlay_tach.png");
+    autoplayButton.x = 944; autoplayButton.y = 922;
+    autoplayHovButton.x = 944; autoplayHovButton.y = 922;
+    autoplayTachButton.x = 944; autoplayTachButton.y = 922;
+    autoplayHovButton.alpha = 0;
+    autoplayTachButton.alpha = 0;
+    autoplayButton.alpha = 1;
+    autoplayButton.on("mouseover", function(){
+      autoplayButton.alpha = 0.01;
+      autoplayHovButton.alpha = 1;
+    });
+    autoplayButton.on("mouseout", function(){
+      autoplayButton.alpha = 1;
+      autoplayHovButton.alpha = 0;
+    });
+    autoplayButton.on("mousedown", function(){
+      autoplayButton.alpha = 0.01;
+      autoplayTachButton.alpha = 1;
+      if(autoplayID) {clearInterval(autoplayID)}
+      else{
+        getSpin();
+        autoplayID = setInterval(getSpin.bind(null), 4000);
+      }
+    });
+    autoplayButton.on("click", function(){
+      autoplayButton.alpha = 1;
+      autoplayTachButton.alpha = 0;
+    });
+    middleStage.addChild(autoplayButton, autoplayHovButton, autoplayTachButton);
+
+    var maxBetButton = new createjs.Bitmap("img/buttons/Max_bet.png"),
+        maxBetHovButton = new createjs.Bitmap("img/buttons/Max_bet_hov.png"),
+        maxBetTachButton = new createjs.Bitmap("img/buttons/Max_bet_tach.png");
+		maxBetButton.x = 1314; maxBetButton.y = 920;
+    maxBetHovButton.x = 1314; maxBetHovButton.y = 920;
+    maxBetTachButton.x = 1314; maxBetTachButton.y = 920;
+    maxBetHovButton.alpha = 0;
+    maxBetTachButton.alpha = 0;
+    maxBetButton.alpha = 1;
     spinButton.cursor = maxBetButton.cursor = autoplayButton.cursor = "pointer";
-		middleStage.addChild(spinButton, autoplayButton, maxBetButton);
-		spinButton.on("mouseover", function(){
-			// console.log("it is spin button!");
-		});
-		spinButton.on("click", function(){
-			// console.log("You have clicked SPIN!");
-			getSpin();
-		});
-		autoplayButton.on("mouseover", function(){
-			// console.log("it is autoplay button!");
-		});
-		maxBetButton.on("mouseover", function(){
-			// console.log("it is max BEt button!");
-		});
+    maxBetButton.on("mouseover", function(){
+      maxBetButton.alpha = 0.01;
+      maxBetHovButton.alpha = 1;
+    });
+    maxBetButton.on("mouseout", function(){
+      maxBetButton.alpha = 1;
+      maxBetHovButton.alpha = 0;
+    });
+    maxBetButton.on("mousedown", function(){
+      maxBetButton.alpha = 0.01;
+      maxBetTachButton.alpha = 1;
+      betValue.text = 10;
+      betValue.x = 822;
+      $.ajax({
+        url: url + '_SetBet/' + sessionID + '/' + betValue.text,
+        dataType: 'JSONP',
+        type: 'GET',
+        success: function(data) {
+          getSpin();
+        }
+      });
+    });
+    maxBetButton.on("click", function(){
+      maxBetButton.alpha = 1;
+      maxBetTachButton.alpha = 0;
+    });
+    middleStage.addChild(maxBetButton, maxBetHovButton, maxBetTachButton);
+
+    var minusCoinsButton = new createjs.Bitmap("img/buttons/Minus.png"),
+        minusCoinsHovButton = new createjs.Bitmap("img/buttons/Minus_hov.png"),
+        minusCoinsTachButton = new createjs.Bitmap("img/buttons/Minus_tach.png");
+    minusCoinsButton.x = 1494; minusCoinsButton.y = 937;
+    minusCoinsHovButton.x = 1494; minusCoinsHovButton.y = 937;
+    minusCoinsTachButton.x = 1494; minusCoinsTachButton.y = 937;
+    minusCoinsHovButton.alpha = 0;
+    minusCoinsTachButton.alpha = 0;
+    minusCoinsButton.alpha = 1;
+    minusCoinsButton.on("mouseover", function(){
+      minusCoinsButton.alpha = 0.01;
+      minusCoinsHovButton.alpha = 1;
+    });
+    minusCoinsButton.on("mouseout", function(){
+      minusCoinsButton.alpha = 1;
+      minusCoinsHovButton.alpha = 0;
+    });
+    minusCoinsButton.on("mousedown", function(){
+      minusCoinsButton.alpha = 0.01;
+      minusCoinsTachButton.alpha = 1;
+      if(+coinsValue.text > 0.01) {
+        if(+coinsValue.text === 0.02) {coinsValue.text = "0.01";}
+        if(+coinsValue.text === 0.05) {coinsValue.text = "0.02";}
+        if(+coinsValue.text === 0.10) {coinsValue.text = "0.05";}
+        if(+coinsValue.text === 0.20) {coinsValue.text = "0.10";}
+        if(+coinsValue.text === 0.50) {coinsValue.text = "0.20";}
+        if(+coinsValue.text === 1.00) {coinsValue.text = "0.50";}
+      }
+      coinsSum.text = 5000/+coinsValue.text;
+      if(+coinsSum.text >= 100 ) {
+        coinsSum.x = 1771;
+      }
+      if(+coinsSum.text >= 1000 ) {
+        coinsSum.x = 1765;
+      }
+      if(+coinsSum.text >= 10000 ) {
+        coinsSum.x = 1759;
+      }
+      if(+coinsSum.text >= 100000 ) {
+        coinsSum.x = 1753;
+      }
+    });
+    minusCoinsButton.on("click", function(){
+      minusCoinsButton.alpha = 1;
+      minusCoinsTachButton.alpha = 0;
+    });
+    middleStage.addChild(minusCoinsButton, minusCoinsHovButton, minusCoinsTachButton);
+    minusCoinsButton.cursor = "pointer";
+
+    var plusCoinsButton = new createjs.Bitmap("img/buttons/Plus.png"),
+        plusCoinsHovButton = new createjs.Bitmap("img/buttons/Plus_hov.png"),
+        plusCoinsTachButton = new createjs.Bitmap("img/buttons/Plus_tach.png");
+    plusCoinsButton.x = 1624; plusCoinsButton.y = 937;
+    plusCoinsHovButton.x = 1624; plusCoinsHovButton.y = 937;
+    plusCoinsTachButton.x = 1624; plusCoinsTachButton.y = 937;
+    plusCoinsHovButton.alpha = 0;
+    plusCoinsTachButton.alpha = 0;
+    plusCoinsButton.alpha = 1;
+    plusCoinsButton.on("mouseover", function(){
+      plusCoinsButton.alpha = 0.01;
+      plusCoinsHovButton.alpha = 1;
+    });
+    plusCoinsButton.on("mouseout", function(){
+      plusCoinsButton.alpha = 1;
+      plusCoinsHovButton.alpha = 0;
+    });
+    plusCoinsButton.on("mousedown", function(){
+      plusCoinsButton.alpha = 0.01;
+      plusCoinsTachButton.alpha = 1;
+      if(+coinsValue.text < 1){
+        if(+coinsValue.text === 0.50) {coinsValue.text = "1.00";}
+        if(+coinsValue.text === 0.20) {coinsValue.text = "0.50";}
+        if(+coinsValue.text === 0.10) {coinsValue.text = "0.20";}
+        if(+coinsValue.text === 0.05) {coinsValue.text = "0.10";}
+        if(+coinsValue.text === 0.02) {coinsValue.text = "0.05";}
+        if(+coinsValue.text === 0.01) {coinsValue.text = "0.02";}
+      }
+      coinsSum.text = 5000/+coinsValue.text;
+      if(+coinsSum.text < 100000 ) {
+        coinsSum.x = 1759;
+      }
+      if(+coinsSum.text < 10000 ) {
+        coinsSum.x = 1765;
+      }
+      if(+coinsSum.text < 1000 ) {
+        coinsSum.x = 1771;
+      }
+      if(+coinsSum.text < 100 ) {
+        coinsSum.x = 1777;
+      }
+    });
+    plusCoinsButton.on("click", function(){
+      plusCoinsButton.alpha = 1;
+      plusCoinsTachButton.alpha = 0;
+    });
+    middleStage.addChild(plusCoinsButton, plusCoinsHovButton, plusCoinsTachButton);
+    plusCoinsButton.cursor = "pointer";
+
+    var minusBetButton = minusCoinsButton.clone(),
+        minusBetHovButton = minusCoinsHovButton.clone(),
+        minusBetTachButton = minusCoinsTachButton.clone();
+    minusBetButton.x = minusBetHovButton.x = minusBetTachButton.x = 750;
+    minusBetButton.on("mouseover", function(){
+      minusBetButton.alpha = 0.01;
+      minusBetHovButton.alpha = 1;
+    });
+    minusBetButton.on("mouseout", function(){
+      minusBetButton.alpha = 1;
+      minusBetHovButton.alpha = 0;
+    });
+    minusBetButton.on("mousedown", function(){
+      minusBetButton.alpha = 0.01;
+      minusBetTachButton.alpha = 1;
+      if(+betValue.text > 1) {
+        betValue.text = +betValue.text - 1;
+      }
+      if(+betValue.text !== 10) {
+        betValue.x = 828;
+      }
+      $.ajax({
+        url: url + '_SetBet/' + sessionID + '/' + betValue.text,
+        dataType: 'JSONP',
+        type: 'GET',
+        success: function(data) {
+          // console.log("Ответ на ставку: " + data);
+        }
+      });
+    });
+    minusBetButton.on("click", function(){
+      minusBetButton.alpha = 1;
+      minusBetTachButton.alpha = 0;
+    });
+    middleStage.addChild(minusBetButton, minusBetHovButton, minusBetTachButton);
+
+    var plusBetButton = plusCoinsButton.clone(),
+        plusBetHovButton = plusCoinsHovButton.clone(),
+        plusBetTachButton = plusCoinsTachButton.clone();
+    plusBetButton.x = plusBetHovButton.x = plusBetTachButton.x = 880;
+    plusBetButton.on("mouseover", function(){
+      plusBetButton.alpha = 0.01;
+      plusBetHovButton.alpha = 1;
+    });
+    plusBetButton.on("mouseout", function(){
+      plusBetButton.alpha = 1;
+      plusBetHovButton.alpha = 0;
+    });
+    plusBetButton.on("mousedown", function(){
+      plusBetButton.alpha = 0.01;
+      plusBetTachButton.alpha = 1;
+      if(+betValue.text < 10) {
+        betValue.text = +betValue.text + 1;
+      }
+      if(+betValue.text === 10) {
+        betValue.x = 822;
+      }
+      $.ajax({
+        url: url + '_SetBet/' + sessionID + '/' + betValue.text,
+        dataType: 'JSONP',
+        type: 'GET',
+        success: function(data) {
+          // console.log("Ответ на ставку: " + data);
+        }
+      });
+    });
+    plusBetButton.on("click", function(){
+      plusBetButton.alpha = 1;
+      plusBetTachButton.alpha = 0;
+    });
+    middleStage.addChild(plusBetButton, plusBetHovButton, plusBetTachButton);
+
 	}
 	drawButtons();
 
 	function drawLines() {
 		for(var i = 1; i <= 21; i++) {
+      var imgLight = new createjs.Bitmap("img/Lines/Line" + i + "gl.png");
+      imgLight.alpha = 0;
+      imgLight.x = -10;
+      // gameStage.addChild(imgLight);
+      linesLight.push(imgLight);
 			var img = new createjs.Bitmap("img/Lines/Line" + i + ".png");
       img.alpha = 0;
       gameStage.addChild(img);
 			lines.push(img);
-			var imgLight = new createjs.Bitmap("img/Lines/Line" + i + "gl.png");
-			imgLight.alpha = 0;
-			imgLight.x = -10;
-			linesLight.push(imgLight);
 		}
-		lines[0].y = 332;
+		lines[0].y = 334;
 		lines[1].y = 139;
 		lines[2].y = 565;
 		lines[3].y = 49;
@@ -243,7 +524,7 @@ $(document).ready(function(){
 	drawLines();
 
 	function drawLineNumbers() {
-		var numbers = [];
+
 		middleStage.enableMouseOver(10);
 		for (var i = 1; i <= 22; i++) {
 			var text = new createjs.Text(i, "20px Arial", "#ddcb8c");
@@ -293,6 +574,7 @@ $(document).ready(function(){
 	function showLine(number) {
 		// gameStage.addChild(linesLight[number-1]);
 		lines[number-1].alpha = 1;
+    // linesLight[number-1].alpha = 1;
 		gameStage.update();
 		// createjs.Tween.get(linesLight[number-1], {loop: true})
 		// 	.to({ alpha: opacity }, 1000)
@@ -322,22 +604,71 @@ $(document).ready(function(){
 								type: 'GET',
 								success: function (data) {
 									if (data !== undefined) {
-										// В случае успеха загружаем барабаны
-										for (var i = 0; i < 5; i++) {
-											$.ajax({
-												url: url + '_GetWheels/' + sessionID + "/" + i,
-												dataType: 'JSONP',
-												type: 'GET',
-												success: function (data) {
-													// Складываем линии в массив (здесь ошибка - линии могут быть не в нужном порядке!!!)
-													wheels.push(data);
-													if(wheels.length === 5) {
-														// И загружаем первый экран
-														showStartScreen(wheels);
-													}
-												}
-											});
-										}
+                    $.ajax({
+                      url: url + '_GetWheels/' + sessionID + "/" + 0,
+                      dataType: 'JSONP',
+                      type: 'GET',
+                      success: function(data) {
+                        var counter = 0;
+                        wheels[0] = data;
+                        for(var i = 0; i < 5; i++) {
+                          if(wheels[i] !== undefined){counter++}
+                        }
+                        if (counter === 5) {showStartScreen(wheels)}
+                      }
+                    });
+                    $.ajax({
+                      url: url + '_GetWheels/' + sessionID + "/" + 1,
+                      dataType: 'JSONP',
+                      type: 'GET',
+                      success: function(data) {
+                        var counter = 0;
+                        wheels[1] = data;
+                        for(var i = 0; i < 5; i++) {
+                          if(wheels[i] !== undefined){counter++}
+                        }
+                        if (counter === 5) {showStartScreen(wheels)}
+                      }
+                    });
+                    $.ajax({
+                      url: url + '_GetWheels/' + sessionID + "/" + 2,
+                      dataType: 'JSONP',
+                      type: 'GET',
+                      success: function(data) {
+                        var counter = 0;
+                        wheels[2] = data;
+                        for(var i = 0; i < 5; i++) {
+                          if(wheels[i] !== undefined){counter++}
+                        }
+                        if (counter === 5) {showStartScreen(wheels)}
+                      }
+                    });
+                    $.ajax({
+                      url: url + '_GetWheels/' + sessionID + "/" + 3,
+                      dataType: 'JSONP',
+                      type: 'GET',
+                      success: function(data) {
+                        var counter = 0;
+                        wheels[3] = data;
+                        for(var i = 0; i < 5; i++) {
+                          if(wheels[i] !== undefined){counter++}
+                        }
+                        if (counter === 5) {showStartScreen(wheels)}
+                      }
+                    });
+                    $.ajax({
+                      url: url + '_GetWheels/' + sessionID + "/" + 4,
+                      dataType: 'JSONP',
+                      type: 'GET',
+                      success: function(data) {
+                        var counter = 0;
+                        wheels[4] = data;
+                        for(var i = 0; i < 5; i++) {
+                          if(wheels[i] !== undefined){counter++}
+                        }
+                        if (counter === 5) {showStartScreen(wheels)}
+                      }
+                    });
                     $.ajax({
                       url: url + '_SetBet/' + sessionID + '/' + bet,
                       dataType: 'JSONP',
@@ -359,8 +690,8 @@ $(document).ready(function(){
                           }
                         }
                       }
-                    })
-									}
+                    });
+									}// Запрос Ready отдал нужный ответ
 								}
 							});
 						}
@@ -372,10 +703,19 @@ $(document).ready(function(){
 	// Инициализируем игру по имени name
 	startGame(name);
 
-	// var spinButton = document.getElementById('spinButton');
-	// spinButton.addEventListener("click", function() {
-	// 	getSpin();
-	// });
+  $("body").on("keydown", function(event){
+    if(event.keyCode === 32 || event.which === 32) {
+      spinButton.alpha = 0.01;
+      spinTachButton.alpha = 1;
+      getSpin();
+    }
+  });
+  $("body").on("keyup", function(event){
+    if(event.keyCode === 32 || event.which === 32) {
+      spinButton.alpha = 1;
+      spinTachButton.alpha = 0;
+     }
+  });
 
 	function showStartScreen(wheels) {
 
@@ -484,7 +824,9 @@ $(document).ready(function(){
 	function getNewScreen() {
 		for (var j = 0; j < 21; j++) {
 			lines[j].alpha = 0;
-			// gameStage.removeChild(linesLight[j]);
+      // linesLight[j].alpha = 0;
+      if(numbers[j].shadow){numbers[j].shadow.offsetX = numbers[j].shadow.offsetY = numbers[j].shadow.blur = 0;}
+
 		}
 		for (var i = 0; i < rowNumber; i++) {
 			gameStage.removeChild(rows[i]);
@@ -511,6 +853,7 @@ $(document).ready(function(){
 						dataType: 'JSONP',
 						type: 'GET',
 						success: function(data) {
+              numbersOfLines = [];
 							// Забираем нужные нам индексы выпавших слотов
 							var indexes = data.Result.Indexes;
 							// Показываем выпавшие линии
@@ -570,29 +913,46 @@ $(document).ready(function(){
   }
 
   function showWinScreen() {
-    for(var i = 0; i < rowNumber; i++) {
-      // gameStage.removeChild(rows[i]);
-      winRows[i] = getFirstRow(i, "win/", 0);
-      winRows[i].x = rowWidth*i;
-      gameStage.addChild(winRows[i]);
-    }
 
-    // console.log(newURL);
+    var clockSpriteData = {
+      images: ["img/watch.png"],
+      frames: {width: 240, height: 225},
+      // framerate: 24,
+      animations: {
+        run: [0, 3]
+      }
+    };
+    var clockSpriteSheet = new createjs.SpriteSheet(clockSpriteData);
+    var clockAnimation = new createjs.Sprite(clockSpriteSheet, "run");
+
     for(var i = 0; i < numbersOfLines.length; i++) {
       var numberOfCurrentLine = numbersOfLines[i][0];
       var numberOfCurrentElements = numbersOfLines[i][1];
+      numbers[numberOfCurrentLine-1].shadow = new createjs.Shadow("#FFFFFF", 1, 1, 2);
       for(var j = 0; j < numberOfCurrentElements; j++) {
         var currentRowNumber = linesCoords[numberOfCurrentLine-1][j][0];
         var currentElementNumber = +linesCoords[numberOfCurrentLine-1][j][1] + 1;
         var currentElement = rows[currentRowNumber].children[currentElementNumber];
         var currentPositionY = currentElement.y;
-        var currentURL = currentElement.image.currentSrc;
-        var currentElementImageNumber = currentURL.substr(currentURL.indexOf(".png") - 1, 1);
-        if(currentElementImageNumber){
-          var newImg = new createjs.Bitmap("img/game/win/" + currentElementImageNumber + ".png");
-          newImg.y = currentPositionY;
-          rows[currentRowNumber].children.splice(currentElementNumber, 1, newImg);
-          // console.log(currentPositionY);
+        if(currentElement.image){
+          var currentURL = currentElement.image.currentSrc;
+          var currentElementImageNumber = currentURL.substr(currentURL.indexOf(".png") - 1, 1);
+          // if(currentElementImageNumber == 9) {
+          //   console.log("I am here and I am trying to run animation!!!");
+          //   var newClock = clockAnimation.clone();
+          //   newClock.y = currentPositionY;
+          //   newClock.play("run");
+          //   rows[currentRowNumber].children.splice(currentElementNumber, 1, newClock);
+          // }
+          if(currentElementImageNumber){
+            var newImg = new createjs.Bitmap("img/game/win/" + currentElementImageNumber + ".png");
+            newImg.y = currentPositionY;
+            createjs.Tween.get(newImg, { loop: true })
+            .to({ alpha: 1, scaleX: 1.02, scaleY: 1.02, x: -3}, 500)
+            .to({ alpha: 0.9, scaleX: 1, scaleY: 1, x: 0}, 500)
+            .to({ alpha: 1, scaleX: 1, scaleY: 1, x: 0}, 300);
+            rows[currentRowNumber].children.splice(currentElementNumber, 1, newImg);
+          }
 
         }
       }
