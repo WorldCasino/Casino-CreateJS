@@ -10,7 +10,9 @@ var bgStage,
     linesCoords,
 		lines = [],
 		linesLight = [],
-		winLines = [];
+		winLines = [],
+    totalWin,
+    winText;
 
 function resizeCanvas(canvasID, width, percent, heightToWidth) {
   // Берем холст
@@ -62,14 +64,28 @@ $(document).ready(function(){
       numbersOfLines = [],
       numbers = [],
 			name = "SomeName" + Math.random()*100, // Имя игрока
-			url = "http://192.168.0.250/JSON/SlotService.svc/", // URL сервера
+			url = "http://62.80.177.130:33333/JSON/SlotService.svc/", // URL сервера
 			sessionID, // ID игровой сессии
 			gameID = 0, // ID игры
       bet = 2, // Ставка
 			wheels = [], // Масиив линий барабана
       spinButton,
       spinHovButton,
-      spinTachButton;
+      spinTachButton,
+      autoplayButton,
+      autoplayHovButton,
+      autoplayTachButton,
+      maxBetButton,
+      maxBetHovButton,
+      maxBetTachButton,
+      startCash = 5000,
+      coinsValue,
+      coinsSum,
+      cashTotal,
+      betTotal,
+      betSum,
+      winTotal,
+      autoplayID = [];
 	// Добавляем перерисовку с FPS = 60
 	createjs.Ticker.setFPS(40);
 	createjs.Ticker.addEventListener("tick", bgStage);
@@ -154,58 +170,76 @@ $(document).ready(function(){
 		middleStage.addChild(gameBG);
 		gameStage.addChild(slotBG);
 
-		createjs.Tween.get(fonarVerh, {loop: true})
-			.to({ rotation: 5 }, 1000)
-			.to({ rotation: -3 , y: 118}, 2000)
-			.to({ rotation: 0, y: 116}, 1000);
+		// createjs.Tween.get(fonarVerh, {loop: true})
+		// 	.to({ rotation: 5 }, 1000)
+		// 	.to({ rotation: -3 , y: 118}, 2000)
+		// 	.to({ rotation: 0, y: 116}, 1000);
 		createjs.Tween.get(tuchi, {loop: true})
 			.to({ x: 300}, 70000)
 			.to({ x: -500}, 70000);
-		createjs.Tween.get(tuman, {loop: true})
-			.to({ x: 0}, 20000)
-			.to({ x: -500}, 20000);
-
-		// Герман
-		var germanData = {
-			images: ["img/idleGerman.png"],
-			frames: {width: 321, height: 600},
-			framerate: 24,
-			animations: {
-				stand: [0, 200]
-			}
-		};
-		var germanSheet = new createjs.SpriteSheet(germanData);
-		var germanAnimation = new createjs.Sprite(germanSheet, "stand");
-		germanAnimation.gotoAndPlay("stand");
-		germanAnimation.scaleX = 1.2; germanAnimation.scaleY = 1.2;
-		germanAnimation.x = 110; germanAnimation.y = 340;
-		bgStage.addChild(germanAnimation);
-		bgStage.addChild(tuman);
+		// createjs.Tween.get(tuman, {loop: true})
+		// 	.to({ x: 0}, 20000)
+		// 	.to({ x: -500}, 20000);
+    //
+		// // Герман
+		// var germanData = {
+		// 	images: ["img/idleGerman.png"],
+		// 	frames: {width: 321, height: 600},
+		// 	framerate: 24,
+		// 	animations: {
+		// 		stand: [0, 200]
+		// 	}
+		// };
+		// var germanSheet = new createjs.SpriteSheet(germanData);
+		// var germanAnimation = new createjs.Sprite(germanSheet, "stand");
+		// germanAnimation.gotoAndPlay("stand");
+		// germanAnimation.scaleX = 1.2; germanAnimation.scaleY = 1.2;
+		// germanAnimation.x = 110; germanAnimation.y = 340;
+		// bgStage.addChild(germanAnimation);
+		// bgStage.addChild(tuman);
 		bgStage.addChild(fonarNiz, fonarVerh);
 	}
 	drawBG();
 
 	function drawButtons() {
-    var autoplayID;
+    var autoplayIndex = 0;
     var betText = new createjs.Text("BET", "13px Arial", "#ffffff");
     betText.x = 628; betText.y = 867;
     middleStage.addChild(betText);
     var coinsText = new createjs.Text("COINS", "13px Arial", "#ffffff");
     coinsText.x = 1752; coinsText.y = 867;
     middleStage.addChild(coinsText);
-    var coinsValue = new createjs.Text("0.02", "bold 25px Arial", "#ffffff");
+    coinsValue = new createjs.Text("0.02", "bold 25px Arial", "#dddddd");
     coinsValue.x = 1553; coinsValue.y = 942;
     middleStage.addChild(coinsValue);
-    var coinsSum = new createjs.Text("250000", "bold 25px Arial", "#ffffff");
+    coinsSum = new createjs.Text(startCash/+coinsValue.text, "bold 25px Arial", "#dddddd");
     coinsSum.x = 1753; coinsSum.y = 928;
     middleStage.addChild(coinsSum);
-    var betValue = new createjs.Text("1", "bold 25px Arial", "#ffffff");
+    var betValue = new createjs.Text("1", "bold 25px Arial", "#dddddd");
     betValue.x = 828; betValue.y = 942;
     middleStage.addChild(betValue);
+    betSum = new createjs.Text("15", "bold 25px Arial", "#dddddd");
+    betSum.x = 625; betSum.y = 921;
+    middleStage.addChild(betSum);
+
+    var cashWord = new createjs.Text("Cash: Є", "bold 20px Arial", "#dddddd");
+    cashWord.x = 890; cashWord.y = 1046;
+    var betWord = new createjs.Text("Bet: Є", "bold 20px Arial", "#dddddd");
+    betWord.x = 1130; betWord.y = 1046;
+    var winWord = new createjs.Text("Win: Є", "bold 20px Arial", "#dddddd");
+    winWord.x = 1362; winWord.y = 1046;
+    cashTotal = new createjs.Text(startCash.toFixed(2)+"", "bold 20px Arial", "#dddddd");
+    cashTotal.x = 980; cashTotal.y = 1046;
+    betTotal = new createjs.Text((+betSum.text*+coinsValue.text).toFixed(2)+"", "bold 20px Arial", "#dddddd");
+    betTotal.x = 1220; betTotal.y = 1046;
+    winTotal = new createjs.Text("0.00", "bold 20px Arial", "#dddddd");
+    winTotal.x = 1450; winTotal.y = 1046;
+    middleStage.addChild(cashTotal, betTotal, winTotal);
+    middleStage.addChild(cashWord, betWord, winWord);
 
 		middleStage.enableMouseOver(10);
-		    spinButton = new createjs.Bitmap("img/buttons/Spin.png"),
-        spinHovButton = new createjs.Bitmap("img/buttons/Spin_hov.png"),
+		    spinButton = new createjs.Bitmap("img/buttons/Spin.png");
+        spinHovButton = new createjs.Bitmap("img/buttons/Spin_hov.png");
         spinTachButton = new createjs.Bitmap("img/buttons/Spin_tach.png");
 		spinButton.x = 1140; spinButton.y = 866;
     spinHovButton.x = 1140; spinHovButton.y = 866;
@@ -214,26 +248,51 @@ $(document).ready(function(){
     spinTachButton.alpha = 0;
     spinButton.alpha = 1;
     spinButton.on("mouseover", function(){
-      spinButton.alpha = 0.01;
+      // spinButton.alpha = 0.01;
       spinHovButton.alpha = 1;
     });
     spinButton.on("mouseout", function(){
-      spinButton.alpha = 1;
+      // spinButton.alpha = 1;
       spinHovButton.alpha = 0;
     });
     spinButton.on("mousedown", function(){
-      spinButton.alpha = 0.01;
+      if(spinButton.alpha !== 0) getSpin();
+      spinButton.alpha = 0;
       spinTachButton.alpha = 1;
-      getSpin();
+      for (var i = 0; i < autoplayID.length; i++) {
+        if(autoplayID[i]) {
+          clearInterval(autoplayID[i]);
+          maxBetTachButton.alpha = 0;
+          maxBetButton.alpha = 1;
+          autoplayButton.alpha = 1;
+          autoplayTachButton.alpha = 0;
+          console.log("Я почистил автоплей!!!");
+        }
+      }
     });
-    spinButton.on("click", function(){
-      spinButton.alpha = 1;
-      spinTachButton.alpha = 0;
+    spinHovButton.on("mousedown", function(){
+      if(spinButton.alpha !== 0) getSpin();
+      spinButton.alpha = 0;
+      spinTachButton.alpha = 1;
+      for (var i = 0; i < autoplayID.length; i++) {
+        if(autoplayID[i]) {
+          clearInterval(autoplayID[i]);
+          maxBetTachButton.alpha = 0;
+          maxBetButton.alpha = 1;
+          autoplayButton.alpha = 1;
+          autoplayTachButton.alpha = 0;
+          console.log("Я почистил автоплей!!!");
+        }
+      }
     });
+    // spinButton.on("click", function(){
+    //   // spinButton.alpha = 1;
+    //   // spinTachButton.alpha = 0;
+    // });
     middleStage.addChild(spinButton, spinHovButton, spinTachButton);
 
-    var autoplayButton = new createjs.Bitmap("img/buttons/AutoPlay.png"),
-        autoplayHovButton = new createjs.Bitmap("img/buttons/AutoPlay_hov.png"),
+        autoplayButton = new createjs.Bitmap("img/buttons/AutoPlay.png");
+        autoplayHovButton = new createjs.Bitmap("img/buttons/AutoPlay_hov.png");
         autoplayTachButton = new createjs.Bitmap("img/buttons/AutoPlay_tach.png");
     autoplayButton.x = 944; autoplayButton.y = 922;
     autoplayHovButton.x = 944; autoplayHovButton.y = 922;
@@ -252,20 +311,53 @@ $(document).ready(function(){
     autoplayButton.on("mousedown", function(){
       autoplayButton.alpha = 0.01;
       autoplayTachButton.alpha = 1;
-      if(autoplayID) {clearInterval(autoplayID)}
+      if(autoplayID[autoplayIndex]) {
+        clearInterval(autoplayID[autoplayIndex]);
+        autoplayIndex++;
+        autoplayTachButton.alpha = 0;
+        autoplayButton.alpha = 1;
+        maxBetTachButton.alpha = 0;
+        maxBetButton.alpha = 1;
+      }
       else{
         getSpin();
-        autoplayID = setInterval(getSpin.bind(null), 4000);
+        autoplayTachButton.alpha = 1;
+        maxBetTachButton.alpha = 1;
+        maxBetButton.alpha = 0;
+        autoplayID[autoplayIndex] = setInterval(getSpin.bind(null), 4000);
       }
     });
-    autoplayButton.on("click", function(){
-      autoplayButton.alpha = 1;
-      autoplayTachButton.alpha = 0;
+    autoplayHovButton.on("mousedown", function(){
+      autoplayButton.alpha = 0.01;
+      autoplayTachButton.alpha = 1;
+      if(autoplayID[autoplayIndex]) {
+        clearInterval(autoplayID[autoplayIndex]);
+        autoplayIndex++;
+        autoplayTachButton.alpha = 0;
+        autoplayButton.alpha = 1;
+        maxBetTachButton.alpha = 0;
+        maxBetButton.alpha = 1;
+      }
+      else{
+        getSpin();
+        autoplayTachButton.alpha = 1;
+        maxBetTachButton.alpha = 1;
+        maxBetButton.alpha = 0;
+        autoplayID[autoplayIndex] = setInterval(getSpin.bind(null), 4000);
+      }
     });
+    // autoplayButton.on("click", function(){
+    //   // autoplayButton.alpha = 1;
+    //   // autoplayTachButton.alpha = 0;
+    //   // spinButton.alpha = 0;
+    //   // spinTachButton.alpha = 1;
+    //   // maxBetButton.alpha = 0;
+    //   // maxBetTachButton.alpha = 1;
+    // });
     middleStage.addChild(autoplayButton, autoplayHovButton, autoplayTachButton);
 
-    var maxBetButton = new createjs.Bitmap("img/buttons/Max_bet.png"),
-        maxBetHovButton = new createjs.Bitmap("img/buttons/Max_bet_hov.png"),
+        maxBetButton = new createjs.Bitmap("img/buttons/Max_bet.png");
+        maxBetHovButton = new createjs.Bitmap("img/buttons/Max_bet_hov.png");
         maxBetTachButton = new createjs.Bitmap("img/buttons/Max_bet_tach.png");
 		maxBetButton.x = 1314; maxBetButton.y = 920;
     maxBetHovButton.x = 1314; maxBetHovButton.y = 920;
@@ -274,8 +366,9 @@ $(document).ready(function(){
     maxBetTachButton.alpha = 0;
     maxBetButton.alpha = 1;
     spinButton.cursor = maxBetButton.cursor = autoplayButton.cursor = "pointer";
+    spinHovButton.cursor = maxBetHovButton.cursor = autoplayHovButton.cursor = "pointer";
     maxBetButton.on("mouseover", function(){
-      maxBetButton.alpha = 0.01;
+      maxBetButton.alpha = 0;
       maxBetHovButton.alpha = 1;
     });
     maxBetButton.on("mouseout", function(){
@@ -285,18 +378,53 @@ $(document).ready(function(){
     maxBetButton.on("mousedown", function(){
       maxBetButton.alpha = 0.01;
       maxBetTachButton.alpha = 1;
-      betValue.text = 10;
-      betValue.x = 822;
-      $.ajax({
-        url: url + '_SetBet/' + sessionID + '/' + betValue.text,
-        dataType: 'JSONP',
-        type: 'GET',
-        success: function(data) {
-          getSpin();
+      if(spinButton.alpha !== 0) {
+        betValue.text = 10;
+        betValue.x = 822;
+        betSum.text = (+betValue.text*15).toFixed(0);
+        if(+betSum.text > 100) {
+          betSum.x = 620; betSum.y = 923;
+          betSum.font = "bold 23px Arial";
         }
-      });
+        betTotal.text = ((+betSum.text) * (+coinsValue.text)).toFixed(2);
+        $.ajax({
+          url: url + '_SetBet/' + sessionID + '/' + betValue.text,
+          dataType: 'JSONP',
+          type: 'GET',
+          success: function(data) {
+            getSpin();
+          }
+        });
+      }
+    });
+    maxBetHovButton.on("mousedown", function(){
+      maxBetButton.alpha = 0.01;
+      maxBetTachButton.alpha = 1;
+      if(spinButton.alpha !== 0) {
+        betValue.text = 10;
+        betValue.x = 822;
+        betSum.text = (+betValue.text*15).toFixed(0);
+        if(+betSum.text > 100) {
+          betSum.x = 620; betSum.y = 923;
+          betSum.font = "bold 23px Arial";
+        }
+        betTotal.text = ((+betSum.text) * (+coinsValue.text)).toFixed(2);
+        $.ajax({
+          url: url + '_SetBet/' + sessionID + '/' + betValue.text,
+          dataType: 'JSONP',
+          type: 'GET',
+          success: function(data) {
+            getSpin();
+          }
+        });
+
+      }
     });
     maxBetButton.on("click", function(){
+      maxBetButton.alpha = 1;
+      maxBetTachButton.alpha = 0;
+    });
+    maxBetHovButton.on("click", function(){
       maxBetButton.alpha = 1;
       maxBetTachButton.alpha = 0;
     });
@@ -330,7 +458,7 @@ $(document).ready(function(){
         if(+coinsValue.text === 0.50) {coinsValue.text = "0.20";}
         if(+coinsValue.text === 1.00) {coinsValue.text = "0.50";}
       }
-      coinsSum.text = 5000/+coinsValue.text;
+      coinsSum.text = (+cashTotal.text/+coinsValue.text).toFixed(0);
       if(+coinsSum.text >= 100 ) {
         coinsSum.x = 1771;
       }
@@ -343,6 +471,7 @@ $(document).ready(function(){
       if(+coinsSum.text >= 100000 ) {
         coinsSum.x = 1753;
       }
+      betTotal.text = (+betSum.text*+coinsValue.text).toFixed(2);
     });
     minusCoinsButton.on("click", function(){
       minusCoinsButton.alpha = 1;
@@ -379,7 +508,7 @@ $(document).ready(function(){
         if(+coinsValue.text === 0.02) {coinsValue.text = "0.05";}
         if(+coinsValue.text === 0.01) {coinsValue.text = "0.02";}
       }
-      coinsSum.text = 5000/+coinsValue.text;
+      coinsSum.text = (+cashTotal.text/+coinsValue.text).toFixed(0);
       if(+coinsSum.text < 100000 ) {
         coinsSum.x = 1759;
       }
@@ -392,6 +521,7 @@ $(document).ready(function(){
       if(+coinsSum.text < 100 ) {
         coinsSum.x = 1777;
       }
+      betTotal.text = (+betSum.text*+coinsValue.text).toFixed(2);
     });
     plusCoinsButton.on("click", function(){
       plusCoinsButton.alpha = 1;
@@ -418,9 +548,15 @@ $(document).ready(function(){
       if(+betValue.text > 1) {
         betValue.text = +betValue.text - 1;
       }
+      betSum.text = betValue.text * 15;
+      if (+betSum.text < 100) {
+        betSum.x = 625; betSum.y = 921;
+        betSum.font = "bold 25px Arial";
+      }
       if(+betValue.text !== 10) {
         betValue.x = 828;
       }
+      betTotal.text = (+betSum.text*+coinsValue.text).toFixed(2);
       $.ajax({
         url: url + '_SetBet/' + sessionID + '/' + betValue.text,
         dataType: 'JSONP',
@@ -454,9 +590,15 @@ $(document).ready(function(){
       if(+betValue.text < 10) {
         betValue.text = +betValue.text + 1;
       }
+      betSum.text = betValue.text * 15;
+      if(+betSum.text > 100) {
+        betSum.x = 620; betSum.y = 923;
+        betSum.font = "bold 23px Arial";
+      }
       if(+betValue.text === 10) {
         betValue.x = 822;
       }
+      betTotal.text = (+betSum.text*+coinsValue.text).toFixed(2);
       $.ajax({
         url: url + '_SetBet/' + sessionID + '/' + betValue.text,
         dataType: 'JSONP',
@@ -477,11 +619,11 @@ $(document).ready(function(){
 
 	function drawLines() {
 		for(var i = 1; i <= 21; i++) {
-      var imgLight = new createjs.Bitmap("img/Lines/Line" + i + "gl.png");
-      imgLight.alpha = 0;
-      imgLight.x = -10;
+      // var imgLight = new createjs.Bitmap("img/Lines/Line" + i + "gl.png");
+      // imgLight.alpha = 0;
+      // imgLight.x = -10;
       // gameStage.addChild(imgLight);
-      linesLight.push(imgLight);
+      // linesLight.push(imgLight);
 			var img = new createjs.Bitmap("img/Lines/Line" + i + ".png");
       img.alpha = 0;
       gameStage.addChild(img);
@@ -516,10 +658,10 @@ $(document).ready(function(){
 		lines[19].y = 378;
 		lines[20].y = 100;
 		lines[20].x = 105;
-		for(var j = 0; j < linesLight.length; j++) {
-			linesLight[j].y = lines[j].y - 13;
-			linesLight[j].x = lines[j].x - 10;
-		}
+		// for(var j = 0; j < linesLight.length; j++) {
+		// 	linesLight[j].y = lines[j].y - 13;
+		// 	linesLight[j].x = lines[j].x - 10;
+		// }
 	}
 	drawLines();
 
@@ -575,7 +717,7 @@ $(document).ready(function(){
 		// gameStage.addChild(linesLight[number-1]);
 		lines[number-1].alpha = 1;
     // linesLight[number-1].alpha = 1;
-		gameStage.update();
+		// gameStage.update();
 		// createjs.Tween.get(linesLight[number-1], {loop: true})
 		// 	.to({ alpha: opacity }, 1000)
 		// 	.to({ alpha: 0 }, 1000);
@@ -705,17 +847,26 @@ $(document).ready(function(){
 
   $("body").on("keydown", function(event){
     if(event.keyCode === 32 || event.which === 32) {
-      spinButton.alpha = 0.01;
+      if(spinButton.alpha !== 0) getSpin();
+      spinButton.alpha = 0;
       spinTachButton.alpha = 1;
-      getSpin();
+      for (var i = 0; i < autoplayID.length; i++) {
+        if(autoplayID[i]) {
+          clearInterval(autoplayID[i]);
+          maxBetTachButton.alpha = 0;
+          maxBetButton.alpha = 1;
+          autoplayButton.alpha = 1;
+          autoplayTachButton.alpha = 0;
+        }
+      }
     }
   });
-  $("body").on("keyup", function(event){
-    if(event.keyCode === 32 || event.which === 32) {
-      spinButton.alpha = 1;
-      spinTachButton.alpha = 0;
-     }
-  });
+  // $("body").on("keyup", function(event){
+  //   if(event.keyCode === 32 || event.which === 32) {
+  //     spinButton.alpha = 1 ;
+  //     spinTachButton.alpha = 0;
+  //    }
+  // });
 
 	function showStartScreen(wheels) {
 
@@ -828,6 +979,7 @@ $(document).ready(function(){
       if(numbers[j].shadow){numbers[j].shadow.offsetX = numbers[j].shadow.offsetY = numbers[j].shadow.blur = 0;}
 
 		}
+    gameStage.removeChild(winText);
 		for (var i = 0; i < rowNumber; i++) {
 			gameStage.removeChild(rows[i]);
       gameStage.removeChild(winRows[i]);
@@ -853,6 +1005,11 @@ $(document).ready(function(){
 						dataType: 'JSONP',
 						type: 'GET',
 						success: function(data) {
+              spinButton.alpha = 0;
+              spinTachButton.alpha = 1;
+              winTotal.text = "0.00";
+              cashTotal.text = (+cashTotal.text - (+betTotal.text)).toFixed(2);
+              coinsSum.text = (+cashTotal.text/(+coinsValue.text)).toFixed(0);
               numbersOfLines = [];
 							// Забираем нужные нам индексы выпавших слотов
 							var indexes = data.Result.Indexes;
@@ -861,6 +1018,7 @@ $(document).ready(function(){
               totalWin = data.Result.TotalWin;
 							console.log(winLines);
               console.log(totalWin);
+              console.log(data.Result);
 							// Записываем значения конечного экрана
 							for (var i = 0; i < 5; i++){
 								nextScreen[i] = [];
@@ -893,6 +1051,11 @@ $(document).ready(function(){
 								// 	setTimeout(showLine.bind(null, numberOfLine, 1), 3200);
 								// }
 							}
+              function setSpinButton() {
+                spinButton.alpha = 1;
+                spinTachButton.alpha = 0;
+              }
+              setTimeout(setSpinButton.bind(null), 3500);
               if(winLines[0] !== undefined) {
                 setTimeout(showWinScreen.bind(null), 3200);
               }
@@ -913,6 +1076,43 @@ $(document).ready(function(){
   }
 
   function showWinScreen() {
+    var someVar = +(totalWin*parseFloat(coinsValue.text)).toFixed(2);
+    winTotal.text = someVar.toFixed(2);
+    cashTotal.text = (+parseFloat(cashTotal.text) + someVar).toFixed(2);
+
+
+
+    winText = new createjs.Text(totalWin, "bold 120px Arial", "#efe947");
+    winText.x = 630;
+    winText.y = 335;
+    winText.scaleX = winText.scaleY = 0;
+    if(+totalWin >= 10 && +totalWin < 100) {
+      createjs.Tween.get(winText, {loop: true})
+      .to({ scaleX: 1, scaleY: 1, x: 575, y: 300}, 300)
+      .to({ alpha: 0.75 }, 500)
+      .to({ alpha: 1 }, 500)
+      .to({ alpha: 0.75 }, 500)
+      .to({ alpha: 1 }, 500)
+      .to({ alpha: 0.75 }, 500)
+      .to({ alpha: 1 }, 500)
+      .to({ alpha: 0.75 }, 500)
+      .to({ alpha: 1 }, 500);
+    }
+    if(+totalWin < 10) {
+      createjs.Tween.get(winText, {loop: true})
+      .to({ scaleX: 1, scaleY: 1, x: 590, y: 300}, 300)
+      .to({ alpha: 0.75 }, 500)
+      .to({ alpha: 1 }, 500)
+      .to({ alpha: 0.75 }, 500)
+      .to({ alpha: 1 }, 500)
+      .to({ alpha: 0.75 }, 500)
+      .to({ alpha: 1 }, 500)
+      .to({ alpha: 0.75 }, 500)
+      .to({ alpha: 1 }, 500);
+    }
+    winText.shadow = new createjs.Shadow("#000000", 5, 10, 6);
+    gameStage.addChild(winText);
+
 
     var clockSpriteData = {
       images: ["img/watch.png"],
@@ -928,6 +1128,8 @@ $(document).ready(function(){
     for(var i = 0; i < numbersOfLines.length; i++) {
       var numberOfCurrentLine = numbersOfLines[i][0];
       var numberOfCurrentElements = numbersOfLines[i][1];
+      if (numberOfCurrentLine === -1) continue;
+      showLine(numberOfCurrentLine);
       numbers[numberOfCurrentLine-1].shadow = new createjs.Shadow("#FFFFFF", 1, 1, 2);
       for(var j = 0; j < numberOfCurrentElements; j++) {
         var currentRowNumber = linesCoords[numberOfCurrentLine-1][j][0];
@@ -956,7 +1158,6 @@ $(document).ready(function(){
 
         }
       }
-      showLine(numberOfCurrentLine);
     }
     // console.log(numbersOfLines);
   }
