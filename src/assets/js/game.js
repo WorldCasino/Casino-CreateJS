@@ -1,759 +1,771 @@
-var bgStage,
-    middleStage,
-		gameStage,
-
-		WIDTH = 1280,
-		HEIGHT = 720,
-		BGWIDTH = 1920,
-    BGHEIGHT = 1080,
-
-    linesCoords,
-		lines = [],
-		linesLight = [],
-		winLines = [],
-    totalWin,
-    winText;
-
-function resizeCanvas(canvasID, width, percent, heightToWidth) {
-  // Берем холст
-  var bgCanvas = document.getElementById(canvasID);
-  // Изменяем его ширину чтобы он занимал 100% экрана и при этом не больше 1280 пикселей !!!!! Число 13 - это костыль(((
-  bgCanvas.style.width = (document.getElementById("game").clientWidth + 13)*percent + "px";
-  if(parseInt(bgCanvas.style.width) > width){bgCanvas.style.width = width + "px"}
-  // Делаем соответствующую высоту холста
-  bgCanvas.style.height = parseInt(bgCanvas.style.width)*heightToWidth + "px";
-
-  // Проделываем все эти операции при любом изменении размеров экрана
-  $(window).on("resize", function(event) {
-    bgCanvas.style.width = document.getElementById("game").clientWidth*percent + "px";
-    if(parseInt(bgCanvas.style.width) > width){bgCanvas.style.width = width + "px"}
-    bgCanvas.style.height = parseInt(bgCanvas.style.width)*heightToWidth + "px";
-  });
-}
+// Набор констант размеров холстов.
+var BG_WIDTH = 1920,     // Размеры заднего пална.
+    BG_HEIGHT = 1080,
+    PANEL_WIDTH = 1920,  // Размеры панели управления.
+    PANEL_HEIGHT = 1080,
+    GAME_WIDTH = 1280,   // Размеры экрана слотов.
+    GAME_HEIGHT = 720;
 
 $(document).ready(function(){
+// Создаем новые Stage для каждого холста.
+var	bgStage = new createjs.Stage("bgCanvas"),       // Холст заднего плана.
+	  panelStage = new createjs.Stage("panelCanvas"), // Холст панели управления.
+  	gameStage = new createjs.Stage("gameCanvas");   // Холст экрана слотов.
 
-	bgStage = new createjs.Stage("bgCanvas");
-	bgStage.canvas.width = BGWIDTH;
-	bgStage.canvas.height = BGHEIGHT;
+var lineNumbers = [],  // массив номеров-подсказок линий.
+    lineImages = [],   // массив изображений линий-подсказок.
+    lineWinImages = [];// массив изображений победных линий.
 
-	middleStage = new createjs.Stage("middleCanvas");
-	middleStage.canvas.width = BGWIDTH;
-	middleStage.canvas.height = BGHEIGHT;
+var coinsValue, coinsSum,           // Монетки - сумма и стоимость монетки.
+    betValue, betSum,               // Ставка - количество монеток на одну ставку и уровень ставки.
+    cashTotal, betTotal, winTotal,  // Сумма депозита - размер ставки в деньгах, выигрыш в деньгах.
+    startCash = 5000;               // Сумма налички которая берется по умолчанию (в дальнейшем будет браться извне).
 
-	gameStage = new createjs.Stage("gameCanvas");
-	gameStage.canvas.width = WIDTH;
-	gameStage.canvas.height = HEIGHT;
+var spinButton, spinHovButton, spinTachButton,                  // Кнопка SPIN в трех состояниях.
+    autoplayButton, autoplayHovButton, autoplayTachButton,      // Кнопка AUTOPLAY в трех состояниях.
+    maxBetButton, maxBetHovButton, maxBetTachButton,            // Кнопка MAX_BET в трех состояниях.
+    plusCoinsButton, plusCoinsHovButton, plusCoinsTachButton,   // Кнопка PLUS_COINS в трех состояниях.
+    minusCoinsButton, minusCoinsHovButton, minusCoinsTachButton,// Кнопка MINUS_COINS в трех состояниях.
+    plusBetButton, plusBetHovButton, plusBetTachButton,         // Кнопка PLUS_BET в трех состояниях.
+    minusBetButton, minusBetHovButton, minusBetTachButton;      // Кнопка MINUS_BET в трех состояниях.
 
-	// Определяем параметры для линий
-	var rowNumber = 5,
-			rowWidth = gameStage.canvas.width/rowNumber,
-	// Определяем параметры для элементов
-			elementNumberAll = 60,
-			elementNumberOnScreen = 3,
-			elementWidth = rowWidth,
-			elementHeight = gameStage.canvas.height/elementNumberOnScreen,
-	// Массивы элементов и их позиций
-			elementsMas = [],
-			elementsPositions = [],
-	// Массивы линий, этого и следующего экранов
-			rows = [],
-	 		currentScreen = [],
-			nextScreen = [],
-      winRows = [],
-      numbersOfLines = [],
-      numbers = [],
-			name = "SomeName" + Math.random()*100, // Имя игрока
-			url = "http://62.80.177.130:33333/JSON/SlotService.svc/", // URL сервера
-			sessionID, // ID игровой сессии
-			gameID = 0, // ID игры
-      bet = 2, // Ставка
-			wheels = [], // Масиив линий барабана
-      spinButton,
-      spinHovButton,
-      spinTachButton,
-      autoplayButton,
-      autoplayHovButton,
-      autoplayTachButton,
-      maxBetButton,
-      maxBetHovButton,
-      maxBetTachButton,
-      startCash = 5000,
-      coinsValue,
-      coinsSum,
-      cashTotal,
-      betTotal,
-      betSum,
-      winTotal,
-      autoplayID = [];
-	// Добавляем перерисовку с FPS = 60
+var spinClicked = false,    // Флаг клика кнопки SPIN.
+    timeOfSpin = 3400,      // Время одной крутки.
+    autoplayID = [];        // Массив с запущенными автоплеями.
+
+var   nameOfPlayer = "SomeName" + Math.random()*100,            // Имя игрока (в дальнейшем будет получаться при вводе).
+			url = "http://62.80.177.130:33333/JSON/SlotService.svc/", // URL сервера.
+			sessionID,                                                // ID игровой сессии (получается при загрузке игры).
+			gameID = 0,                                               // ID игры (получается при загрузке игры).
+      linesCoords = [];                                         // Массив с координатами элементов в линиях.
+
+var rowWidth = gameStage.canvas.width/5,      // Ширина одной линии барабана.
+    elementHeight = gameStage.canvas.height/3,// Высота одного элемента.
+    wheels = [],                              // Массив в который будем загружать барабан.
+    rows = [],                                // Массив из линий элементов.
+    elementsMas = [],                         // Массив номеров элементов (созданы для удобства доступа).
+    elementsPositions = [],                   // Массив позиций элементов (созданы для удобства доступа).
+    currentScreenData = [],                   // Массив 5*5 теперешнего экрана игры.
+    nextScreenData = [];                      // Массив 5*5 выпавшего экрана игры.
+
+var winCoins,             // Это значение выигрыша.
+    winText,              // Текст выигрыша.
+    winRows = [],         // Победный экран.
+    numbersOfLines = [];  // Номера победных линий.
+
+	// Добавляем перерисовку всех холстов с FPS = 40.
 	createjs.Ticker.setFPS(40);
 	createjs.Ticker.addEventListener("tick", bgStage);
-	createjs.Ticker.addEventListener("tick", middleStage);
+	createjs.Ticker.addEventListener("tick", panelStage);
 	createjs.Ticker.addEventListener("tick", gameStage);
 
-	// Изменяем размер холста
-	resizeCanvas("gameCanvas", WIDTH, 0.67, 0.5625);
-	resizeCanvas("bgCanvas", BGWIDTH, 1, 0.5625);
-  resizeCanvas("middleCanvas", BGWIDTH, 1, 0.5625);
+  // Функция resizeCanvas(canvasID, WIDTH, percent, heightToWidth) - изменение размеров холста.
+  function resizeCanvas(canvasID, WIDTH, percent, heightToWidth) {
+    function mainResizeFunc() {
+      // Берем холст c id="canvasID".
+      var canvas = document.getElementById(canvasID);
+      // Изменяем его ширину чтобы он занимал PERCENT процентов экрана и при этом не больше WIDTH пикселей.
+      canvas.style.width = (document.getElementById("game").clientWidth)*percent + "px";
+      // Если ширина холста больше граничной ширины WIDTH, то установим ее как WIDTH.
+      if(parseInt(canvas.style.width) > WIDTH) {canvas.style.width = WIDTH + "px"}
+      // Делаем высоту холста в соответствии с необходимым соотношением HEIGHT/WIDTH = heightToWidth.
+      canvas.style.height = parseInt(canvas.style.width)*heightToWidth + "px";
+    }
+    mainResizeFunc();
+    // Проделываем все вышеописанные операции при любом изменении размеров экрана
+    $(window).on("resize", mainResizeFunc);
+  }
+	// Изменяем размеры холстов
+  resizeCanvas("bgCanvas", BG_WIDTH, 1, 0.5625);
+  resizeCanvas("panelCanvas", PANEL_WIDTH, 1, 0.5625);
+  resizeCanvas("gameCanvas", GAME_WIDTH, 0.67, 0.5625);
 
-	function preloadBG(){
-		var preload, i;
+  // Функция preload() - отвечает за предварительную загрузку изображений.
+	function preload(){
+		var preload, i, j;
+    // Создаем очередь загрузки.
 		preload = new createjs.LoadQueue();
-		preload.on("fileload", function(){
-			bgStage.update();
-		});
-		preload.loadFile("img/gamebg.png");
-		preload.loadFile("img/mainbg.png");
-		preload.loadFile("img/mainfg.png");
-		preload.loadFile("img/Tuchi.png");
-		preload.loadFile("img/fonarverh2.png");
-		preload.loadFile("img/fonarverh3.png");
-		preload.loadFile("img/fonarniz.png");
+    // Загружаем изображения фонов для холстов.
+    preload.loadFile("img/bg/mainBG.png");
+    preload.loadFile("img/bg/cloudsBG.png");
+    preload.loadFile("img/bg/mainFG.png");
+    preload.loadFile("img/bg/gameBG.png");
+    preload.loadFile("img/bg/fogBG.png");
+    preload.loadFile("img/bg/panelBG.png");
+    preload.loadFile("img/bg/lampBottomBG.png");
+    preload.loadFile("img/bg/lampTopBG.png");
+    // Загружаем кнопки панели управления в трех состояниях (normal, hover, active)
 		preload.loadFile("img/buttons/Spin.png");
     preload.loadFile("img/buttons/Spin_hov.png");
     preload.loadFile("img/buttons/Spin_tach.png");
 		preload.loadFile("img/buttons/AutoPlay.png");
     preload.loadFile("img/buttons/AutoPlay_hov.png");
     preload.loadFile("img/buttons/AutoPlay_tach.png");
-    preload.loadFile("img/buttons/Max_bet.png");
-    preload.loadFile("img/buttons/Max_bet_hov.png");
-    preload.loadFile("img/buttons/Max_bet_tach.png");
+    preload.loadFile("img/buttons/MaxBet.png");
+    preload.loadFile("img/buttons/MaxBet_hov.png");
+    preload.loadFile("img/buttons/MaxBet_tach.png");
     preload.loadFile("img/buttons/Minus.png");
     preload.loadFile("img/buttons/Minus_hov.png");
     preload.loadFile("img/buttons/Minus_tach.png");
     preload.loadFile("img/buttons/Plus.png");
     preload.loadFile("img/buttons/Plus_hov.png");
     preload.loadFile("img/buttons/Plus_tach.png");
-	}
-	preloadBG();
-	function preloadSlots() {
-		var preload, i, j;
-		preload = new createjs.LoadQueue();
-		preload.on("fileload", function(){
-			gameStage.update();
-		});
-		// Загружаем наши картинки
-		for(i = 1; i <= 10; i++) {
-			preload.loadFile("img/game/" + i + ".png");
-			preload.loadFile("img/game/blur/" + i + "b.png");
+    // Загружаем изображения слотов - обычные, выигрышные, размытые (для прокрутки).
+    for(i = 1; i <= 13; i++) {
+      preload.loadFile("img/game/" + i + ".png");
       preload.loadFile("img/game/win/" + i + ".png");
-		}
-		for(j = 1; j <= 21; j++) {
-			preload.loadFile("img/Lines/Line" + j + ".png");
-			preload.loadFile("img/Lines/Line" + j + "gl.png");
-		}
-		preload.loadFile("img/bgwithstrings.png");
+      if(i <= 10) { // Размытой дамы на три слота у нас не будет.
+        preload.loadFile("img/game/blur/" + i + "b.png");
+      }
+    }
+    // Загружаем выигрышные линии.
+    for(j = 1; j <= 21; j++) {
+      preload.loadFile("img/lines/Line" + j + ".png");
+    }
 	}
-	// Производим предварительную загрузку изображений
-	preloadSlots();
+  // Проведем предварительную загрузку мультимедиа файлов (картинок и звуков).
+  preload();
 
-	function drawBG() {
-		var slotBG = new createjs.Bitmap("img/bgwithstrings.png");
-		var mainBG = new createjs.Bitmap("img/mainbg.png");
-		var mainFG = new createjs.Bitmap("img/mainfg.png");
-		var tuchi = new createjs.Bitmap("img/Tuchi.png");
-		var tuman = new createjs.Bitmap("img/tuman_niz.png");
-		var gameBG = new createjs.Bitmap("img/gamebg.png");
-		var fonarNiz = new createjs.Bitmap("img/fonarniz.png");
-		var fonarVerh = new createjs.Bitmap("img/fonarverh3.png");
-		slotBG.width = WIDTH;
-		mainBG.width = gameBG.width = BGWIDTH;
-		slotBG.height = HEIGHT;
-		mainBG.height = gameBG.height = BGHEIGHT;
-		fonarNiz.x = -20; fonarNiz.y = 65;
-		fonarVerh.x = 8; fonarVerh.y = 116;
-		tuchi.x = -500;
-		tuman.x = -500; tuman.y = 600;
-    slotBG.x = -16; slotBG.y = -5;
-		bgStage.addChild(mainBG, tuchi, mainFG);
-		middleStage.addChild(gameBG);
-		gameStage.addChild(slotBG);
+  // Функция drawMainBG() - отвечает за прорисовку фонов, туч, тумана, панели управления и заднего фона слотов.
+	function drawMainBG() {
+    // Создаем на заднем холсте трехслойную структуру состоящую из:
+		var mainBG = new createjs.Bitmap("img/bg/mainBG.png"),     // заднего фона.
+        cloudsBG = new createjs.Bitmap("img/bg/cloudsBG.png"), // туч посередине.
+		    mainFG = new createjs.Bitmap("img/bg/mainFG.png");     // и переднего фона с прозрачным небом.
+    // Задвигаем облака немного за экран.
+    cloudsBG.x = -300;
+    // И в цикле передвигаем их вправо-влево (по 1-ой минуте).
+    createjs.Tween.get(cloudsBG, {loop: true})
+      .to({ x: 300}, 60000)
+      .to({ x: -300}, 60000);
+    // Также у нас на фоне есть туман снизу у брущатки.
+    var fogBG = new createjs.Bitmap("img/bg/fogBG.png");
+    // Позиционируем его относительно верхнего левого угла заднего плана.
+    fogBG.x = -500; fogBG.y = 600;
+    // И будем плавно его передвигать вправо-влево (по 20 секунд).
+    createjs.Tween.get(fogBG, {loop: true})
+    .to({ x: 0}, 20000)
+    .to({ x: -500}, 20000);
+    // Слева у края экрана есть фонарь, он состоит из двух частей: лампы и всего остального.
+    var lampTopBG = new createjs.Bitmap("img/bg/lampTopBG.png"),
+        lampBottomBG = new createjs.Bitmap("img/bg/lampBottomBG.png");
+    // Проведем их позиционирование относительно того же верхнего угла.
+    lampBottomBG.x = -20; lampBottomBG.y = 65;
+    lampTopBG.x = 8; lampTopBG.y = 116;
+    // И нарисуем все это на холсте bgStage в нужном порядке наложения.
+    bgStage.addChild(mainBG, cloudsBG, mainFG, lampTopBG, lampBottomBG, fogBG);
 
-		// createjs.Tween.get(fonarVerh, {loop: true})
-		// 	.to({ rotation: 5 }, 1000)
-		// 	.to({ rotation: -3 , y: 118}, 2000)
-		// 	.to({ rotation: 0, y: 116}, 1000);
-		createjs.Tween.get(tuchi, {loop: true})
-			.to({ x: 300}, 70000)
-			.to({ x: -500}, 70000);
-		// createjs.Tween.get(tuman, {loop: true})
-		// 	.to({ x: 0}, 20000)
-		// 	.to({ x: -500}, 20000);
-    //
-		// // Герман
-		// var germanData = {
-		// 	images: ["img/idleGerman.png"],
-		// 	frames: {width: 321, height: 600},
-		// 	framerate: 24,
-		// 	animations: {
-		// 		stand: [0, 200]
-		// 	}
-		// };
-		// var germanSheet = new createjs.SpriteSheet(germanData);
-		// var germanAnimation = new createjs.Sprite(germanSheet, "stand");
-		// germanAnimation.gotoAndPlay("stand");
-		// germanAnimation.scaleX = 1.2; germanAnimation.scaleY = 1.2;
-		// germanAnimation.x = 110; germanAnimation.y = 340;
-		// bgStage.addChild(germanAnimation);
-		// bgStage.addChild(tuman);
-		bgStage.addChild(fonarNiz, fonarVerh);
+    // Создаем основу панели управления.
+    var panelBG = new createjs.Bitmap("img/bg/panelBG.png");
+    // И рисуем ее на холсте panelBG.
+    panelStage.addChild(panelBG);
+
+    // Создаем задний фон для слотов.
+    var gameBG = new createjs.Bitmap("img/bg/gameBG.png");
+    // И рисуем его на холсте gameBG.
+		gameStage.addChild(gameBG);
 	}
-	drawBG();
+  // Рисуем задний фон для всех трех холстов (bgStage, panelStage, gameStage).
+  drawMainBG();
 
-	function drawButtons() {
-    var autoplayIndex = 0;
-    var betText = new createjs.Text("BET", "13px Arial", "#ffffff");
-    betText.x = 628; betText.y = 867;
-    middleStage.addChild(betText);
-    var coinsText = new createjs.Text("COINS", "13px Arial", "#ffffff");
-    coinsText.x = 1752; coinsText.y = 867;
-    middleStage.addChild(coinsText);
-    coinsValue = new createjs.Text("0.02", "bold 25px Arial", "#dddddd");
-    coinsValue.x = 1553; coinsValue.y = 942;
-    middleStage.addChild(coinsValue);
-    coinsSum = new createjs.Text(startCash/+coinsValue.text, "bold 25px Arial", "#dddddd");
-    coinsSum.x = 1753; coinsSum.y = 928;
-    middleStage.addChild(coinsSum);
-    var betValue = new createjs.Text("1", "bold 25px Arial", "#dddddd");
-    betValue.x = 828; betValue.y = 942;
-    middleStage.addChild(betValue);
-    betSum = new createjs.Text("15", "bold 25px Arial", "#dddddd");
-    betSum.x = 625; betSum.y = 921;
-    middleStage.addChild(betSum);
+  // На холсте панели управления подключаем hover события мыши.
+  panelStage.enableMouseOver(10);
 
-    var cashWord = new createjs.Text("Cash: Є", "bold 20px Arial", "#dddddd");
-    cashWord.x = 890; cashWord.y = 1046;
-    var betWord = new createjs.Text("Bet: Є", "bold 20px Arial", "#dddddd");
-    betWord.x = 1130; betWord.y = 1046;
-    var winWord = new createjs.Text("Win: Є", "bold 20px Arial", "#dddddd");
-    winWord.x = 1362; winWord.y = 1046;
-    cashTotal = new createjs.Text(startCash.toFixed(2)+"", "bold 20px Arial", "#dddddd");
-    cashTotal.x = 980; cashTotal.y = 1046;
-    betTotal = new createjs.Text((+betSum.text*+coinsValue.text).toFixed(2)+"", "bold 20px Arial", "#dddddd");
-    betTotal.x = 1220; betTotal.y = 1046;
-    winTotal = new createjs.Text("0.00", "bold 20px Arial", "#dddddd");
-    winTotal.x = 1450; winTotal.y = 1046;
-    middleStage.addChild(cashTotal, betTotal, winTotal);
-    middleStage.addChild(cashWord, betWord, winWord);
-
-		middleStage.enableMouseOver(10);
-		    spinButton = new createjs.Bitmap("img/buttons/Spin.png");
-        spinHovButton = new createjs.Bitmap("img/buttons/Spin_hov.png");
-        spinTachButton = new createjs.Bitmap("img/buttons/Spin_tach.png");
-		spinButton.x = 1140; spinButton.y = 866;
-    spinHovButton.x = 1140; spinHovButton.y = 866;
-    spinTachButton.x = 1140; spinTachButton.y = 866;
-    spinHovButton.alpha = 0;
-    spinTachButton.alpha = 0;
-    spinButton.alpha = 1;
-    spinButton.on("mouseover", function(){
-      // spinButton.alpha = 0.01;
-      spinHovButton.alpha = 1;
-    });
-    spinButton.on("mouseout", function(){
-      // spinButton.alpha = 1;
-      spinHovButton.alpha = 0;
-    });
-    spinButton.on("mousedown", function(){
-      if(spinButton.alpha !== 0) getSpin();
-      spinButton.alpha = 0;
-      spinTachButton.alpha = 1;
-      for (var i = 0; i < autoplayID.length; i++) {
-        if(autoplayID[i]) {
-          clearInterval(autoplayID[i]);
-          maxBetTachButton.alpha = 0;
-          maxBetButton.alpha = 1;
-          autoplayButton.alpha = 1;
-          autoplayTachButton.alpha = 0;
-          console.log("Я почистил автоплей!!!");
-        }
+  // Функция drawLines() - отвечает за прорисовку и поведение линий-подсказок и номеров к ним.
+  function drawLines() {
+    // Рисуем линии.
+    drawLineImages();
+    // Рисуем номера к линиям.
+    drawLineNumbers();
+    // Функция drawLineImages() - отвечает за прорисовку и позиционирование линий.
+    function drawLineImages() {
+      var img, i;
+      for(i = 1; i <= 21; i++) {
+        // Создаем изображение для 21-ой линии.
+        img = new createjs.Bitmap("img/Lines/Line" + i + ".png");
+        // Делаем его невидимым.
+        img.alpha = 0;
+        // Рисуем на игровом холсте.
+        gameStage.addChild(img);
+        // И добавляем во внешний массив lineImages.
+        lineImages.push(img);
       }
-    });
-    spinHovButton.on("mousedown", function(){
-      if(spinButton.alpha !== 0) getSpin();
-      spinButton.alpha = 0;
-      spinTachButton.alpha = 1;
-      for (var i = 0; i < autoplayID.length; i++) {
-        if(autoplayID[i]) {
-          clearInterval(autoplayID[i]);
-          maxBetTachButton.alpha = 0;
-          maxBetButton.alpha = 1;
-          autoplayButton.alpha = 1;
-          autoplayTachButton.alpha = 0;
-          console.log("Я почистил автоплей!!!");
-        }
+      // Позиционируем линии на холсте.
+      lineImages[0].y = 334;
+      lineImages[1].y = 139;
+      lineImages[2].y = 574;
+      lineImages[3].y = 54;
+      lineImages[4].y = 94;
+      lineImages[5].y = 90;
+      lineImages[6].y = 335;
+      lineImages[7].x = 85;   lineImages[7].y = 144;
+      lineImages[8].y = 288;
+      lineImages[9].y = 380;
+      lineImages[10].y = 108;
+      lineImages[11].x = 85;  lineImages[11].y = 105;
+      lineImages[12].x = 85;  lineImages[12].y = 45;
+      lineImages[13].x = 85;  lineImages[13].y = 104;
+      lineImages[14].x = 85;  lineImages[14].y = 92;
+      lineImages[15].x = 85;  lineImages[15].y = 99;
+      lineImages[16].x = 85;  lineImages[16].y = 184;
+      lineImages[17].y = 137;
+      lineImages[18].y = 105;
+      lineImages[19].y = 379;
+      lineImages[20].x = 105; lineImages[20].y = 98;
+      // Копируем изображения в массив lineWinImages.
+      for(i = 0; i <= 20; i++) {
+        lineWinImages.push(lineImages[i].clone());
+        gameStage.addChild(lineWinImages[i]);
       }
-    });
-    // spinButton.on("click", function(){
-    //   // spinButton.alpha = 1;
-    //   // spinTachButton.alpha = 0;
-    // });
-    middleStage.addChild(spinButton, spinHovButton, spinTachButton);
-
-        autoplayButton = new createjs.Bitmap("img/buttons/AutoPlay.png");
-        autoplayHovButton = new createjs.Bitmap("img/buttons/AutoPlay_hov.png");
-        autoplayTachButton = new createjs.Bitmap("img/buttons/AutoPlay_tach.png");
-    autoplayButton.x = 944; autoplayButton.y = 922;
-    autoplayHovButton.x = 944; autoplayHovButton.y = 922;
-    autoplayTachButton.x = 944; autoplayTachButton.y = 922;
-    autoplayHovButton.alpha = 0;
-    autoplayTachButton.alpha = 0;
-    autoplayButton.alpha = 1;
-    autoplayButton.on("mouseover", function(){
-      autoplayButton.alpha = 0.01;
-      autoplayHovButton.alpha = 1;
-    });
-    autoplayButton.on("mouseout", function(){
-      autoplayButton.alpha = 1;
-      autoplayHovButton.alpha = 0;
-    });
-    autoplayButton.on("mousedown", function(){
-      autoplayButton.alpha = 0.01;
-      autoplayTachButton.alpha = 1;
-      if(autoplayID[autoplayIndex]) {
-        clearInterval(autoplayID[autoplayIndex]);
-        autoplayIndex++;
-        autoplayTachButton.alpha = 0;
-        autoplayButton.alpha = 1;
-        maxBetTachButton.alpha = 0;
-        maxBetButton.alpha = 1;
-      }
-      else{
-        getSpin();
-        autoplayTachButton.alpha = 1;
-        maxBetTachButton.alpha = 1;
-        maxBetButton.alpha = 0;
-        autoplayID[autoplayIndex] = setInterval(getSpin.bind(null), 4000);
-      }
-    });
-    autoplayHovButton.on("mousedown", function(){
-      autoplayButton.alpha = 0.01;
-      autoplayTachButton.alpha = 1;
-      if(autoplayID[autoplayIndex]) {
-        clearInterval(autoplayID[autoplayIndex]);
-        autoplayIndex++;
-        autoplayTachButton.alpha = 0;
-        autoplayButton.alpha = 1;
-        maxBetTachButton.alpha = 0;
-        maxBetButton.alpha = 1;
-      }
-      else{
-        getSpin();
-        autoplayTachButton.alpha = 1;
-        maxBetTachButton.alpha = 1;
-        maxBetButton.alpha = 0;
-        autoplayID[autoplayIndex] = setInterval(getSpin.bind(null), 4000);
-      }
-    });
-    // autoplayButton.on("click", function(){
-    //   // autoplayButton.alpha = 1;
-    //   // autoplayTachButton.alpha = 0;
-    //   // spinButton.alpha = 0;
-    //   // spinTachButton.alpha = 1;
-    //   // maxBetButton.alpha = 0;
-    //   // maxBetTachButton.alpha = 1;
-    // });
-    middleStage.addChild(autoplayButton, autoplayHovButton, autoplayTachButton);
-
-        maxBetButton = new createjs.Bitmap("img/buttons/Max_bet.png");
-        maxBetHovButton = new createjs.Bitmap("img/buttons/Max_bet_hov.png");
-        maxBetTachButton = new createjs.Bitmap("img/buttons/Max_bet_tach.png");
-		maxBetButton.x = 1314; maxBetButton.y = 920;
-    maxBetHovButton.x = 1314; maxBetHovButton.y = 920;
-    maxBetTachButton.x = 1314; maxBetTachButton.y = 920;
-    maxBetHovButton.alpha = 0;
-    maxBetTachButton.alpha = 0;
-    maxBetButton.alpha = 1;
-    spinButton.cursor = maxBetButton.cursor = autoplayButton.cursor = "pointer";
-    spinHovButton.cursor = maxBetHovButton.cursor = autoplayHovButton.cursor = "pointer";
-    maxBetButton.on("mouseover", function(){
-      maxBetButton.alpha = 0;
-      maxBetHovButton.alpha = 1;
-    });
-    maxBetButton.on("mouseout", function(){
-      maxBetButton.alpha = 1;
-      maxBetHovButton.alpha = 0;
-    });
-    maxBetButton.on("mousedown", function(){
-      maxBetButton.alpha = 0.01;
-      maxBetTachButton.alpha = 1;
-      if(spinButton.alpha !== 0) {
-        betValue.text = 10;
-        betValue.x = 822;
-        betSum.text = (+betValue.text*15).toFixed(0);
-        if(+betSum.text > 100) {
-          betSum.x = 620; betSum.y = 923;
-          betSum.font = "bold 23px Arial";
-        }
-        betTotal.text = ((+betSum.text) * (+coinsValue.text)).toFixed(2);
-        $.ajax({
-          url: url + '_SetBet/' + sessionID + '/' + betValue.text,
-          dataType: 'JSONP',
-          type: 'GET',
-          success: function(data) {
-            getSpin();
-          }
+    }
+    // Функция drawLineNumbers()- отвечает за прорисовку номеров к линиям-подсказкам.
+    function drawLineNumbers() {
+      var text, hit, i;
+      for (i = 1; i <= 22; i++) { // Считаем до 22 из-за дублирования 1-го номера.
+        // Создаем номера линий.
+        text = new createjs.Text(i, "20px Arial", "#ddcb8c");
+        // И добавляем их во внешний массив lineNumbers.
+        lineNumbers.push(text);
+        // Создаем вокруг номеров круги (hitArea) для взаимодействия с мышью.
+        hit = new createjs.Shape();
+        hit.graphics.beginFill("#000").drawCircle(text.getMeasuredWidth()/2, text.getMeasuredHeight()/2, 19);
+        text.hitArea = hit;
+        // Когда мышь попадает на номер
+        text.on("mouseover", function(){
+          //  - мы показываем линию.
+          showLine(this.text);
+          //  - и делаем тень для номера.
+          this.shadow = new createjs.Shadow("#FFFFFF", 1, 1, 2);
         });
-      }
-    });
-    maxBetHovButton.on("mousedown", function(){
-      maxBetButton.alpha = 0.01;
-      maxBetTachButton.alpha = 1;
-      if(spinButton.alpha !== 0) {
-        betValue.text = 10;
-        betValue.x = 822;
-        betSum.text = (+betValue.text*15).toFixed(0);
-        if(+betSum.text > 100) {
-          betSum.x = 620; betSum.y = 923;
-          betSum.font = "bold 23px Arial";
-        }
-        betTotal.text = ((+betSum.text) * (+coinsValue.text)).toFixed(2);
-        $.ajax({
-          url: url + '_SetBet/' + sessionID + '/' + betValue.text,
-          dataType: 'JSONP',
-          type: 'GET',
-          success: function(data) {
-            getSpin();
-          }
+        // Когда мышь уходит
+        text.on("mouseout", function(){
+          //  - мы убираем линию.
+          hideLine(this.text);
+          //  - и обнуляем тень.
+          this.shadow.offsetX = this.shadow.offsetY = this.shadow.blur = 0;
         });
+      } // Конец цикла for(i)
+      lineNumbers[21].text = 1; // У нас два первых номера.
+      // Позиционируем все номера линий относительно верхнего левого угла.
+      lineNumbers[0].x = 549; lineNumbers[0].y = 455;
+      lineNumbers[1].x = 1855; lineNumbers[1].y = 257;
+      lineNumbers[2].x = 1855; lineNumbers[2].y = 697;
+      lineNumbers[3].x = 549; lineNumbers[3].y = 165;
+      lineNumbers[4].x = 549; lineNumbers[4].y = 789;
+      lineNumbers[5].x = 549; lineNumbers[5].y = 210;
+      lineNumbers[6].x = 550; lineNumbers[6].y = 744;
+      lineNumbers[7].x = 1855; lineNumbers[7].y = 548;
+      lineNumbers[8].x = 549; lineNumbers[8].y = 409;
+      lineNumbers[9].x = 542; lineNumbers[9].y = 650;
+      lineNumbers[10].x = 543; lineNumbers[10].y = 303;
+      lineNumbers[11].x = 1848; lineNumbers[11].y = 789;
+      lineNumbers[12].x = 1848; lineNumbers[12].y = 165;
+      lineNumbers[13].x = 1848; lineNumbers[13].y = 744;
+      lineNumbers[14].x = 1848; lineNumbers[14].y = 212;
+      lineNumbers[15].x = 1848; lineNumbers[15].y = 651;
+      lineNumbers[16].x = 1848; lineNumbers[16].y = 304;
+      lineNumbers[17].x = 543; lineNumbers[17].y = 257;
+      lineNumbers[18].x = 543; lineNumbers[18].y = 697;
+      lineNumbers[19].x = 543; lineNumbers[19].y = 501;
+      lineNumbers[20].x = 1850; lineNumbers[20].y = 501;
+      lineNumbers[21].x = 1855; lineNumbers[21].y = 455;
+      // Рисуем все номера линий на холсте панели управления.
+      for (var i = 0; i < lineNumbers.length; i++) {
+        panelStage.addChild(lineNumbers[i]);
+      }
+    }
+    // Функция showLine(number) - показ линии-подсказки с номером number.
+    function showLine(number) {
+      lineImages[number-1].alpha = 1;
+    }
+    // Функция hideLine(number) - скрывание линии-подсказки с номером number.
+    function hideLine(number) {
+      lineImages[number-1].alpha = 0;
+    }
+  }
+  // Рисуем линии и номера к ним.
+  drawLines();
 
-      }
-    });
-    maxBetButton.on("click", function(){
-      maxBetButton.alpha = 1;
-      maxBetTachButton.alpha = 0;
-    });
-    maxBetHovButton.on("click", function(){
-      maxBetButton.alpha = 1;
-      maxBetTachButton.alpha = 0;
-    });
-    middleStage.addChild(maxBetButton, maxBetHovButton, maxBetTachButton);
+  // Функция drawPanel() - отвечает за отрисовку и поведение кнопок, и панели управления.
+  function drawPanel() {
 
-    var minusCoinsButton = new createjs.Bitmap("img/buttons/Minus.png"),
-        minusCoinsHovButton = new createjs.Bitmap("img/buttons/Minus_hov.png"),
-        minusCoinsTachButton = new createjs.Bitmap("img/buttons/Minus_tach.png");
-    minusCoinsButton.x = 1494; minusCoinsButton.y = 937;
-    minusCoinsHovButton.x = 1494; minusCoinsHovButton.y = 937;
-    minusCoinsTachButton.x = 1494; minusCoinsTachButton.y = 937;
-    minusCoinsHovButton.alpha = 0;
-    minusCoinsTachButton.alpha = 0;
-    minusCoinsButton.alpha = 1;
-    minusCoinsButton.on("mouseover", function(){
-      minusCoinsButton.alpha = 0.01;
-      minusCoinsHovButton.alpha = 1;
-    });
-    minusCoinsButton.on("mouseout", function(){
-      minusCoinsButton.alpha = 1;
-      minusCoinsHovButton.alpha = 0;
-    });
-    minusCoinsButton.on("mousedown", function(){
-      minusCoinsButton.alpha = 0.01;
-      minusCoinsTachButton.alpha = 1;
-      if(+coinsValue.text > 0.01) {
-        if(+coinsValue.text === 0.02) {coinsValue.text = "0.01";}
-        if(+coinsValue.text === 0.05) {coinsValue.text = "0.02";}
-        if(+coinsValue.text === 0.10) {coinsValue.text = "0.05";}
-        if(+coinsValue.text === 0.20) {coinsValue.text = "0.10";}
-        if(+coinsValue.text === 0.50) {coinsValue.text = "0.20";}
-        if(+coinsValue.text === 1.00) {coinsValue.text = "0.50";}
-      }
-      coinsSum.text = (+cashTotal.text/+coinsValue.text).toFixed(0);
-      if(+coinsSum.text >= 100 ) {
-        coinsSum.x = 1771;
-      }
-      if(+coinsSum.text >= 1000 ) {
-        coinsSum.x = 1765;
-      }
-      if(+coinsSum.text >= 10000 ) {
-        coinsSum.x = 1759;
-      }
-      if(+coinsSum.text >= 100000 ) {
-        coinsSum.x = 1753;
-      }
-      betTotal.text = (+betSum.text*+coinsValue.text).toFixed(2);
-    });
-    minusCoinsButton.on("click", function(){
-      minusCoinsButton.alpha = 1;
-      minusCoinsTachButton.alpha = 0;
-    });
-    middleStage.addChild(minusCoinsButton, minusCoinsHovButton, minusCoinsTachButton);
-    minusCoinsButton.cursor = "pointer";
+    // Рисуем статистику на нижней части панели управления.
+    drawStatus();
+    // Функция drawStatus() - отвечает за отрисовку значений ставок, монет и выигрыша.
+    function drawStatus() {
+      // Добавляем подписи "BET" и "COINS" на холст panelStage.
+      var betText = new createjs.Text("BET", "bold 13px Arial", "#ffffff");
+      betText.x = 628;      betText.y = 867;
+      var coinsText = new createjs.Text("COINS", "bold 13px Arial", "#ffffff");
+      coinsText.x = 1752;   coinsText.y = 867;
+      panelStage.addChild(betText, coinsText);
 
-    var plusCoinsButton = new createjs.Bitmap("img/buttons/Plus.png"),
-        plusCoinsHovButton = new createjs.Bitmap("img/buttons/Plus_hov.png"),
-        plusCoinsTachButton = new createjs.Bitmap("img/buttons/Plus_tach.png");
-    plusCoinsButton.x = 1624; plusCoinsButton.y = 937;
-    plusCoinsHovButton.x = 1624; plusCoinsHovButton.y = 937;
-    plusCoinsTachButton.x = 1624; plusCoinsTachButton.y = 937;
-    plusCoinsHovButton.alpha = 0;
-    plusCoinsTachButton.alpha = 0;
-    plusCoinsButton.alpha = 1;
-    plusCoinsButton.on("mouseover", function(){
-      plusCoinsButton.alpha = 0.01;
-      plusCoinsHovButton.alpha = 1;
-    });
-    plusCoinsButton.on("mouseout", function(){
-      plusCoinsButton.alpha = 1;
-      plusCoinsHovButton.alpha = 0;
-    });
-    plusCoinsButton.on("mousedown", function(){
-      plusCoinsButton.alpha = 0.01;
-      plusCoinsTachButton.alpha = 1;
-      if(+coinsValue.text < 1){
-        if(+coinsValue.text === 0.50) {coinsValue.text = "1.00";}
-        if(+coinsValue.text === 0.20) {coinsValue.text = "0.50";}
-        if(+coinsValue.text === 0.10) {coinsValue.text = "0.20";}
-        if(+coinsValue.text === 0.05) {coinsValue.text = "0.10";}
-        if(+coinsValue.text === 0.02) {coinsValue.text = "0.05";}
-        if(+coinsValue.text === 0.01) {coinsValue.text = "0.02";}
-      }
-      coinsSum.text = (+cashTotal.text/+coinsValue.text).toFixed(0);
-      if(+coinsSum.text < 100000 ) {
-        coinsSum.x = 1759;
-      }
-      if(+coinsSum.text < 10000 ) {
-        coinsSum.x = 1765;
-      }
-      if(+coinsSum.text < 1000 ) {
-        coinsSum.x = 1771;
-      }
-      if(+coinsSum.text < 100 ) {
-        coinsSum.x = 1777;
-      }
-      betTotal.text = (+betSum.text*+coinsValue.text).toFixed(2);
-    });
-    plusCoinsButton.on("click", function(){
-      plusCoinsButton.alpha = 1;
-      plusCoinsTachButton.alpha = 0;
-    });
-    middleStage.addChild(plusCoinsButton, plusCoinsHovButton, plusCoinsTachButton);
-    plusCoinsButton.cursor = "pointer";
+      // Добавляем значения coinsValue, coinsSum, betValue, betSum. Они должны быть доступны внешним функциям.
+      coinsValue = new createjs.Text("0.02", "bold 25px Arial", "#dddddd");
+      coinsValue.x = 1553;  coinsValue.y = 942;
+      coinsSum = new createjs.Text(startCash/+coinsValue.text, "bold 25px Arial", "#dddddd");
+      coinsSum.x = 1753;    coinsSum.y = 928;
+      betValue = new createjs.Text("1", "bold 25px Arial", "#dddddd");
+      betValue.x = 828;     betValue.y = 942;
+      betSum = new createjs.Text("15", "bold 25px Arial", "#dddddd");
+      betSum.x = 625;       betSum.y = 921;
+      panelStage.addChild(coinsValue, coinsSum, betValue, betSum);
 
-    var minusBetButton = minusCoinsButton.clone(),
-        minusBetHovButton = minusCoinsHovButton.clone(),
-        minusBetTachButton = minusCoinsTachButton.clone();
-    minusBetButton.x = minusBetHovButton.x = minusBetTachButton.x = 750;
-    minusBetButton.on("mouseover", function(){
-      minusBetButton.alpha = 0.01;
-      minusBetHovButton.alpha = 1;
-    });
-    minusBetButton.on("mouseout", function(){
-      minusBetButton.alpha = 1;
-      minusBetHovButton.alpha = 0;
-    });
-    minusBetButton.on("mousedown", function(){
-      minusBetButton.alpha = 0.01;
-      minusBetTachButton.alpha = 1;
-      if(+betValue.text > 1) {
-        betValue.text = +betValue.text - 1;
-      }
-      betSum.text = betValue.text * 15;
-      if (+betSum.text < 100) {
-        betSum.x = 625; betSum.y = 921;
-        betSum.font = "bold 25px Arial";
-      }
-      if(+betValue.text !== 10) {
-        betValue.x = 828;
-      }
-      betTotal.text = (+betSum.text*+coinsValue.text).toFixed(2);
-      $.ajax({
-        url: url + '_SetBet/' + sessionID + '/' + betValue.text,
-        dataType: 'JSONP',
-        type: 'GET',
-        success: function(data) {
-          // console.log("Ответ на ставку: " + data);
+      // Добавляем надписи для нижней панели расчетов денег.
+      var cashWord = new createjs.Text("Cash: €", "bold 20px Arial", "#dddddd");
+      cashWord.x = 890;     cashWord.y = 1046;
+      var betWord = new createjs.Text("Bet: €", "bold 20px Arial", "#dddddd");
+      betWord.x = 1130;     betWord.y = 1046;
+      var winWord = new createjs.Text("Win: €", "bold 20px Arial", "#dddddd");
+      winWord.x = 1362;     winWord.y = 1046;
+      panelStage.addChild(cashWord, betWord, winWord);
+
+      // Добавляем расчет денег, ставки, выигрыша - cashTotal, betTotal, winTotal.
+      cashTotal = new createjs.Text(startCash.toFixed(2)+"", "bold 20px Arial", "#dddddd");
+      cashTotal.x = 980;    cashTotal.y = 1046;
+      betTotal = new createjs.Text((+betSum.text*+coinsValue.text).toFixed(2)+"", "bold 20px Arial", "#dddddd");
+      betTotal.x = 1220;    betTotal.y = 1046;
+      winTotal = new createjs.Text("0.00", "bold 20px Arial", "#dddddd");
+      winTotal.x = 1450;    winTotal.y = 1046;
+      panelStage.addChild(cashTotal, betTotal, winTotal);
+    }
+
+    // Рисуем кнопки в трех состояниях.
+    drawButtons();
+    // Функция drawButtons() - отвечает за отрисовку трех состояний кнопок.
+    function drawButtons() {
+      // Создаем кнопки в трех состояниях. SPIN
+      spinButton = new createjs.Bitmap("img/buttons/Spin.png");
+      spinHovButton = new createjs.Bitmap("img/buttons/Spin_hov.png");
+      spinTachButton = new createjs.Bitmap("img/buttons/Spin_tach.png");
+      // Позиционируем кнопки.
+      spinButton.x = 1140;      spinButton.y = 866;
+      spinHovButton.x = 1140;   spinHovButton.y = 866;
+      spinTachButton.x = 1140;  spinTachButton.y = 866;
+      // Видна только основная кнопка.
+      spinButton.alpha = 1; spinHovButton.alpha = 0;  spinTachButton.alpha = 0;
+      // Курсор как на обычной кнопке.
+      spinButton.cursor = spinHovButton.cursor = spinTachButton.cursor = "pointer";
+      // Рисуем кнопки на холсте panelStage.
+      panelStage.addChild(spinButton, spinHovButton, spinTachButton);
+
+      // Создаем кнопки в трех состояниях. AUTOPLAY
+      autoplayButton = new createjs.Bitmap("img/buttons/AutoPlay.png");
+      autoplayHovButton = new createjs.Bitmap("img/buttons/AutoPlay_hov.png");
+      autoplayTachButton = new createjs.Bitmap("img/buttons/AutoPlay_tach.png");
+      // Позиционируем кнопки.
+      autoplayButton.x = 944;     autoplayButton.y = 922;
+      autoplayHovButton.x = 944;  autoplayHovButton.y = 922;
+      autoplayTachButton.x = 944; autoplayTachButton.y = 922;
+      // Видна только основная кнопка.
+      autoplayButton.alpha = 1; autoplayHovButton.alpha = 0; autoplayTachButton.alpha = 0;
+      // Курсор как на обычной кнопке.
+      autoplayButton.cursor = autoplayHovButton.cursor = autoplayTachButton.cursor = "pointer";
+      // Рисуем кнопки на холсте panelStage.
+      panelStage.addChild(autoplayButton, autoplayHovButton, autoplayTachButton);
+
+      // Создаем кнопки в трех состояниях. MAX_BET
+      maxBetButton = new createjs.Bitmap("img/buttons/MaxBet.png");
+      maxBetHovButton = new createjs.Bitmap("img/buttons/MaxBet_hov.png");
+      maxBetTachButton = new createjs.Bitmap("img/buttons/MaxBet_tach.png");
+      // Позиционируем кнопки.
+      maxBetButton.x = 1314;      maxBetButton.y = 920;
+      maxBetHovButton.x = 1314;   maxBetHovButton.y = 920;
+      maxBetTachButton.x = 1314;  maxBetTachButton.y = 920;
+      // Видна только основная кнопка.
+      maxBetButton.alpha = 1; maxBetHovButton.alpha = 0; maxBetTachButton.alpha = 0;
+      // Курсор как на обычной кнопке.
+      maxBetButton.cursor = maxBetHovButton.cursor = maxBetTachButton.cursor = "pointer";
+      // Рисуем кнопки на холсте panelStage.
+      panelStage.addChild(maxBetButton, maxBetHovButton, maxBetTachButton);
+
+      // Создаем кнопки в трех состояниях. MINUS_COINS
+      minusCoinsButton = new createjs.Bitmap("img/buttons/Minus.png"),
+      minusCoinsHovButton = new createjs.Bitmap("img/buttons/Minus_hov.png"),
+      minusCoinsTachButton = new createjs.Bitmap("img/buttons/Minus_tach.png");
+      // Позиционируем кнопки.
+      minusCoinsButton.x = 1494;      minusCoinsButton.y = 937;
+      minusCoinsHovButton.x = 1494;   minusCoinsHovButton.y = 937;
+      minusCoinsTachButton.x = 1494;  minusCoinsTachButton.y = 937;
+      // Видна только основная кнопка.
+      minusCoinsButton.alpha = 1; minusCoinsHovButton.alpha = 0; minusCoinsTachButton.alpha = 0;
+      // Курсор как на обычной кнопке.
+      minusCoinsButton.cursor = minusCoinsHovButton.cursor = minusCoinsTachButton.cursor = "pointer";
+      // Рисуем кнопки на холсте panelStage.
+      panelStage.addChild(minusCoinsButton, minusCoinsHovButton, minusCoinsTachButton);
+
+      // Создаем кнопки в трех состояниях. PLUS_COINS
+      plusCoinsButton = new createjs.Bitmap("img/buttons/Plus.png"),
+      plusCoinsHovButton = new createjs.Bitmap("img/buttons/Plus_hov.png"),
+      plusCoinsTachButton = new createjs.Bitmap("img/buttons/Plus_tach.png");
+      // Позиционируем кнопки.
+      plusCoinsButton.x = 1624;     plusCoinsButton.y = 937;
+      plusCoinsHovButton.x = 1624;  plusCoinsHovButton.y = 937;
+      plusCoinsTachButton.x = 1624; plusCoinsTachButton.y = 937;
+      // Видна только основная кнопка.
+      plusCoinsButton.alpha = 1; plusCoinsHovButton.alpha = 0; plusCoinsTachButton.alpha = 0;
+      // Курсор как на обычной кнопке.
+      plusCoinsButton.cursor = plusCoinsHovButton.cursor = plusCoinsTachButton.cursor = "pointer";
+      // Рисуем кнопки на холсте panelStage.
+      panelStage.addChild(plusCoinsButton, plusCoinsHovButton, plusCoinsTachButton);
+
+      // Клонируем кнопки в трех состояниях. MINUS_BET
+      minusBetButton = minusCoinsButton.clone(),
+      minusBetHovButton = minusCoinsHovButton.clone(),
+      minusBetTachButton = minusCoinsTachButton.clone();
+      // Позиционируем кнопки.
+      minusBetButton.x = minusBetHovButton.x = minusBetTachButton.x = 750;
+      // Рисуем кнопки на холсте panelStage.
+      panelStage.addChild(minusBetButton, minusBetHovButton, minusBetTachButton);
+
+      // Клонируем кнопки в трех состояниях. PLUS_BET
+      plusBetButton = plusCoinsButton.clone(),
+      plusBetHovButton = plusCoinsHovButton.clone(),
+      plusBetTachButton = plusCoinsTachButton.clone();
+      // Позиционируем кнопки.
+      plusBetButton.x = plusBetHovButton.x = plusBetTachButton.x = 880;
+      // Рисуем кнопки на холсте panelStage.
+      panelStage.addChild(plusBetButton, plusBetHovButton, plusBetTachButton);
+    }
+
+    // Поведение кнопок
+    controlButtons();
+    // Функция controlButtons() - отвечает за настройку поведения кнопок панели управления.
+    function controlButtons() {
+      // Ховер эффект на кнопке SPIN.
+      spinButton.on("rollover", function(){
+        spinHovButton.alpha = 1;
+      });
+      spinButton.on("rollout", function(){
+        spinHovButton.alpha = 0;
+      });
+      spinHovButton.on("rollover", function(){
+        spinHovButton.alpha = 1;
+      });
+      spinHovButton.on("rollout", function(){
+        spinHovButton.alpha = 0;
+      });
+      // Клик на кнопке SPIN.
+      spinButton.on("mousedown", function(){
+        spinON();
+        autoplayOFF();
+      });
+      spinHovButton.on("mousedown", function(){
+        spinON();
+        autoplayOFF();
+      });
+      // SPIN по пробелу.
+      $(document).on("keydown", function(event){
+        if(event.keyCode === 32 || event.which === 32) { // Если нажат пробел.
+          spinON();
+          autoplayOFF();
         }
       });
-    });
-    minusBetButton.on("click", function(){
-      minusBetButton.alpha = 1;
-      minusBetTachButton.alpha = 0;
-    });
-    middleStage.addChild(minusBetButton, minusBetHovButton, minusBetTachButton);
 
-    var plusBetButton = plusCoinsButton.clone(),
-        plusBetHovButton = plusCoinsHovButton.clone(),
-        plusBetTachButton = plusCoinsTachButton.clone();
-    plusBetButton.x = plusBetHovButton.x = plusBetTachButton.x = 880;
-    plusBetButton.on("mouseover", function(){
-      plusBetButton.alpha = 0.01;
-      plusBetHovButton.alpha = 1;
-    });
-    plusBetButton.on("mouseout", function(){
-      plusBetButton.alpha = 1;
-      plusBetHovButton.alpha = 0;
-    });
-    plusBetButton.on("mousedown", function(){
-      plusBetButton.alpha = 0.01;
-      plusBetTachButton.alpha = 1;
-      if(+betValue.text < 10) {
-        betValue.text = +betValue.text + 1;
-      }
-      betSum.text = betValue.text * 15;
-      if(+betSum.text > 100) {
+      var autoplayIndex = 0; // Индекс AUTOPLAY сессии. (нужен для его отключения).
+      // Ховер эффект на кнопке AUTOPLAY.
+      autoplayButton.on("rollover", function(){
+        autoplayHovButton.alpha = 1;
+      });
+      autoplayButton.on("rollout", function(){
+        autoplayHovButton.alpha = 0;
+      });
+      autoplayHovButton.on("rollover", function(){
+        autoplayHovButton.alpha = 1;
+      });
+      autoplayHovButton.on("rollout", function(){
+        autoplayHovButton.alpha = 0;
+      });
+      // Клик на кнопке AUTOPLAY.
+      autoplayHovButton.on("mousedown", function(){
+        autoplayTachButton.alpha = 1;
+        maxBetTachButton.alpha = 1;
+        spinON();
+        autoplayID[autoplayIndex] = setInterval(spinON.bind(null), timeOfSpin + 300);
+      });
+      // Если AUTOPLAY уже работает, то мы его отключим.
+      autoplayTachButton.on("mousedown", function(){
+        autoplayTachButton.alpha = 0;
+        maxBetTachButton.alpha = 0;
+        clearInterval(autoplayID[autoplayIndex]);
+        autoplayIndex++;
+      });
+
+      // Ховер эффект на кнопке MAX_BET.
+      maxBetButton.on("rollover", function(){
+        maxBetHovButton.alpha = 1;
+      });
+      maxBetButton.on("rollout", function(){
+        maxBetHovButton.alpha = 0;
+      });
+      maxBetHovButton.on("rollover", function(){
+        maxBetHovButton.alpha = 1;
+      });
+      maxBetHovButton.on("rollout", function(){
+        maxBetHovButton.alpha = 0;
+      });
+      // Клик на кнопке MAX_BET.
+      maxBetHovButton.on("mousedown", function(){
+        maxBetTachButton.alpha = 1;
+        // Изменяем значение уровня ставки на 10.
+        betValue.text = 10;
+        betValue.x = 822;
+        // Пересчитуем сумму монет на ставку на 150.
+        betSum.text = (+betValue.text*15).toFixed(0);
         betSum.x = 620; betSum.y = 923;
         betSum.font = "bold 23px Arial";
-      }
-      if(+betValue.text === 10) {
-        betValue.x = 822;
-      }
-      betTotal.text = (+betSum.text*+coinsValue.text).toFixed(2);
-      $.ajax({
-        url: url + '_SetBet/' + sessionID + '/' + betValue.text,
-        dataType: 'JSONP',
-        type: 'GET',
-        success: function(data) {
-          // console.log("Ответ на ставку: " + data);
+        // Пересчитуем сумму ставки в деньгах.
+        betTotal.text = ((+betSum.text) * (+coinsValue.text)).toFixed(2);
+        // Отправляем запрос со значением ставки, и по возврату пробуем запустить SPIN.
+        $.ajax({
+          url: url + '_SetBet/' + sessionID + '/' + betValue.text,
+          dataType: 'JSONP',
+          type: 'GET',
+          success: function() {
+            spinON();
+          }
+        });
+      });
+      maxBetHovButton.on("click", function(){
+        maxBetTachButton.alpha = 0;
+      });
+
+      // Ховер эффект на кнопке MINUS_COINS.
+      minusCoinsButton.on("rollover", function(){
+        minusCoinsHovButton.alpha = 1;
+      });
+      minusCoinsButton.on("rollout", function(){
+        minusCoinsHovButton.alpha = 0;
+      });
+      minusCoinsHovButton.on("rollover", function(){
+        minusCoinsHovButton.alpha = 1;
+      });
+      minusCoinsHovButton.on("rollout", function(){
+        minusCoinsHovButton.alpha = 0;
+      });
+      // Клик на кнопке MINUS_COINS.
+      minusCoinsHovButton.on("mousedown", function(){
+        // Устанавливаем неравномерный шаг уменьшения стоимости монеты.
+        if(+coinsValue.text > 0.01) {
+          if(+coinsValue.text === 0.02) {coinsValue.text = "0.01";}
+          if(+coinsValue.text === 0.05) {coinsValue.text = "0.02";}
+          if(+coinsValue.text === 0.10) {coinsValue.text = "0.05";}
+          if(+coinsValue.text === 0.20) {coinsValue.text = "0.10";}
+          if(+coinsValue.text === 0.50) {coinsValue.text = "0.20";}
+          if(+coinsValue.text === 1.00) {coinsValue.text = "0.50";}
+        }
+        // Пересчитываем общую сумму монет.
+        coinsSum.text = (+cashTotal.text/+coinsValue.text).toFixed(0);
+        // Пересчитываем сумму ставки в деньгах.
+        betTotal.text = (+betSum.text*+coinsValue.text).toFixed(2);
+        // В зависимости от величины суммы подправляем расположение чтобы цифра была по центру.
+        if(+coinsSum.text >= 10 ) {
+          coinsSum.x = 1777;
+        }
+        if(+coinsSum.text >= 100 ) {
+          coinsSum.x = 1771;
+        }
+        if(+coinsSum.text >= 1000 ) {
+          coinsSum.x = 1765;
+        }
+        if(+coinsSum.text >= 10000 ) {
+          coinsSum.x = 1759;
         }
       });
-    });
-    plusBetButton.on("click", function(){
-      plusBetButton.alpha = 1;
-      plusBetTachButton.alpha = 0;
-    });
-    middleStage.addChild(plusBetButton, plusBetHovButton, plusBetTachButton);
 
-	}
-	drawButtons();
+      // Ховер эффект на кнопке PLUS_COINS.
+      plusCoinsButton.on("rollover", function(){
+        plusCoinsHovButton.alpha = 1;
+      });
+      plusCoinsButton.on("rollout", function(){
+        plusCoinsHovButton.alpha = 0;
+      });
+      plusCoinsHovButton.on("rollover", function(){
+        plusCoinsHovButton.alpha = 1;
+      });
+      plusCoinsHovButton.on("rollout", function(){
+        plusCoinsHovButton.alpha = 0;
+      });
+      // Клик на кнопке PLUS_COINS.
+      plusCoinsHovButton.on("mousedown", function(){
+        // Устанавливаем неравномерный шаг увеличения стоимости монеты.
+        if(+coinsValue.text < 1){
+          if(+coinsValue.text === 0.50) {coinsValue.text = "1.00";}
+          if(+coinsValue.text === 0.20) {coinsValue.text = "0.50";}
+          if(+coinsValue.text === 0.10) {coinsValue.text = "0.20";}
+          if(+coinsValue.text === 0.05) {coinsValue.text = "0.10";}
+          if(+coinsValue.text === 0.02) {coinsValue.text = "0.05";}
+          if(+coinsValue.text === 0.01) {coinsValue.text = "0.02";}
+        }
+        // Пересчитываем общую сумму монет.
+        coinsSum.text = (+cashTotal.text/+coinsValue.text).toFixed(0);
+        // Пересчитываем сумму ставки в деньгах.
+        betTotal.text = (+betSum.text*+coinsValue.text).toFixed(2);
+        // В зависимости от величины суммы подправляем расположение чтобы цифра была по центру.
+        if(+coinsSum.text < 100000 ) {
+          coinsSum.x = 1759;
+        }
+        if(+coinsSum.text < 10000 ) {
+          coinsSum.x = 1765;
+        }
+        if(+coinsSum.text < 1000 ) {
+          coinsSum.x = 1771;
+        }
+        if(+coinsSum.text < 100 ) {
+          coinsSum.x = 1777;
+        }
+      });
 
-	function drawLines() {
-		for(var i = 1; i <= 21; i++) {
-      // var imgLight = new createjs.Bitmap("img/Lines/Line" + i + "gl.png");
-      // imgLight.alpha = 0;
-      // imgLight.x = -10;
-      // gameStage.addChild(imgLight);
-      // linesLight.push(imgLight);
-			var img = new createjs.Bitmap("img/Lines/Line" + i + ".png");
-      img.alpha = 0;
-      gameStage.addChild(img);
-			lines.push(img);
-		}
-		lines[0].y = 334;
-		lines[1].y = 139;
-		lines[2].y = 565;
-		lines[3].y = 49;
-		lines[4].y = 94;
-		lines[5].y = 88;
-		lines[6].y = 327;
-		lines[7].y = 142;
-		lines[7].x = 85;
-		lines[8].y = 286;
-		lines[9].y = 380;
-		lines[10].y = 108;
-		lines[11].y = 105;
-		lines[11].x = 85;
-		lines[12].y = 45;
-		lines[12].x = 85;
-		lines[13].y = 105;
-		lines[13].x = 85;
-		lines[14].y = 92;
-		lines[14].x = 85;
-		lines[15].y = 98;
-		lines[15].x = 85;
-		lines[16].y = 184;
-		lines[16].x = 85;
-		lines[17].y = 137;
-		lines[18].y = 105;
-		lines[19].y = 378;
-		lines[20].y = 100;
-		lines[20].x = 105;
-		// for(var j = 0; j < linesLight.length; j++) {
-		// 	linesLight[j].y = lines[j].y - 13;
-		// 	linesLight[j].x = lines[j].x - 10;
-		// }
-	}
-	drawLines();
+      // Ховер эффект на кнопке MINUS_BET.
+      minusBetButton.on("rollover", function(){
+        minusBetHovButton.alpha = 1;
+      });
+      minusBetButton.on("rollout", function(){
+        minusBetHovButton.alpha = 0;
+      });
+      minusBetHovButton.on("rollover", function(){
+        minusBetHovButton.alpha = 1;
+      });
+      minusBetHovButton.on("rollout", function(){
+        minusBetHovButton.alpha = 0;
+      });
+      // Клик на кнопке MINUS_BET.
+      minusBetHovButton.on("mousedown", function(){
+        // Проверяем условие что уровень ставки больше 1.
+        if(+betValue.text > 1) {
+          betValue.text = +betValue.text - 1;
+        }
+        // Пересчитываем сумму ставки в монетках.
+        betSum.text = betValue.text * 15;
+        // Пересчитываем сумму ставки в деньгах.
+        betTotal.text = (+betSum.text*+coinsValue.text).toFixed(2);
+        // Если значения слишком большие , то выравниваем по центру.
+        if(+betSum.text < 100) {
+          betSum.x = 625; betSum.y = 921;
+          betSum.font = "bold 25px Arial";
+        }
+        if(+betValue.text !== 10) {
+          betValue.x = 828;
+        }
+        // Отправляем на сервер запрос со значением ставки.
+        $.ajax({
+          url: url + '_SetBet/' + sessionID + '/' + betValue.text,
+          dataType: 'JSONP',
+          type: 'GET',
+          success: function() {
+          }
+        });
+      });
 
-	function drawLineNumbers() {
+      // Ховер эффект на кнопке PLUS_BET.
+      plusBetButton.on("rollover", function(){
+        plusBetHovButton.alpha = 1;
+      });
+      plusBetButton.on("rollout", function(){
+        plusBetHovButton.alpha = 0;
+      });
+      plusBetHovButton.on("rollover", function(){
+        plusBetHovButton.alpha = 1;
+      });
+      plusBetHovButton.on("rollout", function(){
+        plusBetHovButton.alpha = 0;
+      });
+      // Клик на кнопке PLUS_BET.
+      plusBetHovButton.on("mousedown", function(){
+        // Проверяем что значение уровня ставки меньше 10.
+        if(+betValue.text < 10) {
+          betValue.text = +betValue.text + 1;
+        }
+        // Пересчитываем сумму ставки в монетках.
+        betSum.text = betValue.text * 15;
+        // Пересчитываем сумму ставки в деньгах.
+        betTotal.text = (+betSum.text*+coinsValue.text).toFixed(2);
+        // Если значения слишком большие , то выравниваем по центру.
+        if(+betSum.text > 100) {
+          betSum.x = 620; betSum.y = 923;
+          betSum.font = "bold 23px Arial";
+        }
+        if(+betValue.text === 10) {
+          betValue.x = 822;
+        }
+        // Отправляем на сервер запрос со значением ставки.
+        $.ajax({
+          url: url + '_SetBet/' + sessionID + '/' + betValue.text,
+          dataType: 'JSONP',
+          type: 'GET',
+          success: function() {
+          }
+        });
+      });
 
-		middleStage.enableMouseOver(10);
-		for (var i = 1; i <= 22; i++) {
-			var text = new createjs.Text(i, "20px Arial", "#ddcb8c");
-			text.textBaseline = "top";
-			numbers.push(text);
-			var hit = new createjs.Shape();
-			hit.graphics.beginFill("#000").drawCircle(text.getMeasuredWidth()/2, text.getMeasuredHeight()/2, 19);
-			text.hitArea = hit;
-			text.on("mouseover", function(){
-				showLine(this.text);
-				this.shadow = new createjs.Shadow("#FFFFFF", 1, 1, 2);
-			});
-			text.on("mouseout", function(){
-				lines[this.text - 1].alpha = 0;
-				this.shadow.offsetX = this.shadow.offsetY = this.shadow.blur = 0;
-			});
-		}
-		numbers[21].text = 1;
-		numbers[0].x = 549; numbers[0].y = 455;
-		numbers[1].x = 1855; numbers[1].y = 257;
-		numbers[2].x = 1855; numbers[2].y = 697;
-		numbers[3].x = 549; numbers[3].y = 165;
-		numbers[4].x = 549; numbers[4].y = 789;
-		numbers[5].x = 549; numbers[5].y = 210;
-		numbers[6].x = 550; numbers[6].y = 744;
-		numbers[7].x = 1855; numbers[7].y = 548;
-		numbers[8].x = 549; numbers[8].y = 409;
-		numbers[9].x = 542; numbers[9].y = 650;
-		numbers[10].x = 543; numbers[10].y = 303;
-		numbers[11].x = 1848; numbers[11].y = 789;
-		numbers[12].x = 1848; numbers[12].y = 165;
-		numbers[13].x = 1848; numbers[13].y = 744;
-		numbers[14].x = 1848; numbers[14].y = 212;
-		numbers[15].x = 1848; numbers[15].y = 651;
-		numbers[16].x = 1848; numbers[16].y = 304;
-		numbers[17].x = 543; numbers[17].y = 257;
-		numbers[18].x = 543; numbers[18].y = 697;
-		numbers[19].x = 543; numbers[19].y = 501;
-  	numbers[20].x = 1850; numbers[20].y = 501;
-		numbers[21].x = 1855; numbers[21].y = 455;
-		for (var i = 0; i < numbers.length; i++) {
-			middleStage.addChild(numbers[i]);
-		}
-	}
-	drawLineNumbers();
+      // Функция spinOFF() - отвечает за возвращение состояния для следующей крутки.
+      function spinOFF() {
+        spinTachButton.alpha = 0;
+        spinClicked = false;
+      }
+      // Функция spinON() - отвечает за проверку возможности запуска крутки.
+      function spinON() {
+        if (!spinClicked){ // Если SPIN не крутится.
+          spinClicked = true; // Изменяем флаг - показываем что сейчас происходит SPIN.
+          spinTachButton.alpha = 1; // Делаем видимой кнопку при клике.
+          setTimeout(spinOFF.bind(null), timeOfSpin); // Когда крутка закончится - состояние вернется к исходному.
+          spin(); // Делаем крутку.
+        }
+      }
+      // Функция autoplayOFF() - отвечает за отключение автоплея если он установлен.
+      function autoplayOFF() {
+        // Снимаем все AUTOPLAY.
+        for (var i = 0; i < autoplayID.length; i++) {
+          if(autoplayID[i]) {
+            clearInterval(autoplayID[i]);
+            maxBetTachButton.alpha = 0;
+            autoplayTachButton.alpha = 0;
+          }
+        }
+      }
+    }
 
-	function showLine(number) {
-		// gameStage.addChild(linesLight[number-1]);
-		lines[number-1].alpha = 1;
-    // linesLight[number-1].alpha = 1;
-		// gameStage.update();
-		// createjs.Tween.get(linesLight[number-1], {loop: true})
-		// 	.to({ alpha: opacity }, 1000)
-		// 	.to({ alpha: 0 }, 1000);
-	}
+  }
+  // Рисуем панель управления.
+  drawPanel();
 
+  // Функция startGame(name) - отвечает за инициализацию игры, получение барабанов, координат линии, установки ставки, и загрузки начального экрана.
 	function startGame(name) {
-		// Запрос по имени пользователя
+		// Запрос по имени пользователя.
 		$.ajax({
 			url: url + '_Login/' + name,
 			dataType: 'JSONP',
 			type: 'GET',
-			success: function (data) {
-				// Получаем ID
-				sessionID = data;
-				// Запрос на начало игры
+			success: function (ID) {
+				// Получаем от сервера sessionID.
+				sessionID = ID;
+				// Запрос на начало игры.
 				$.ajax({
 					url: url + '_Play/' + sessionID + "/" + gameID,
 					dataType: 'JSONP',
 					type: 'GET',
-					success: function (data) {
-						if (data.hPlayResult !== undefined) {
-							//Запрос на проверку Ready
+					success: function (someRequest) {
+						if (someRequest.hPlayResult !== undefined) {
+              // Если ответ вменяемый, то -
+							// Запрос на проверку Ready.
 							$.ajax({
 								url: url + '_Ready/' + sessionID,
 								dataType: 'JSONP',
 								type: 'GET',
-								success: function (data) {
-									if (data !== undefined) {
+								success: function (anotherSomeRequest) {
+									if (anotherSomeRequest !== undefined) {
+                    // Если ответ вменяемый, то -
+                    // Отправляем запросы на получение линий барабана.
                     $.ajax({
                       url: url + '_GetWheels/' + sessionID + "/" + 0,
                       dataType: 'JSONP',
                       type: 'GET',
-                      success: function(data) {
-                        var counter = 0;
-                        wheels[0] = data;
-                        for(var i = 0; i < 5; i++) {
+                      success: function(line) {
+                        var i, counter = 0;
+                        // Присваиваем определенному индексу массива wheels полученую линию.
+                        wheels[0] = line;
+                        // Здесь проводится проверки окончания загрузки всех линий и загружается стартовый экран.
+                        for(i = 0; i < 5; i++) {
                           if(wheels[i] !== undefined){counter++}
                         }
                         if (counter === 5) {showStartScreen(wheels)}
@@ -763,10 +775,12 @@ $(document).ready(function(){
                       url: url + '_GetWheels/' + sessionID + "/" + 1,
                       dataType: 'JSONP',
                       type: 'GET',
-                      success: function(data) {
-                        var counter = 0;
-                        wheels[1] = data;
-                        for(var i = 0; i < 5; i++) {
+                      success: function(line) {
+                        var i, counter = 0;
+                        // Присваиваем определенному индексу массива wheels полученую линию.
+                        wheels[1] = line;
+                        // Здесь проводится проверки окончания загрузки всех линий и загружается стартовый экран.
+                        for(i = 0; i < 5; i++) {
                           if(wheels[i] !== undefined){counter++}
                         }
                         if (counter === 5) {showStartScreen(wheels)}
@@ -776,10 +790,12 @@ $(document).ready(function(){
                       url: url + '_GetWheels/' + sessionID + "/" + 2,
                       dataType: 'JSONP',
                       type: 'GET',
-                      success: function(data) {
-                        var counter = 0;
-                        wheels[2] = data;
-                        for(var i = 0; i < 5; i++) {
+                      success: function(line) {
+                        var i, counter = 0;
+                        // Присваиваем определенному индексу массива wheels полученую линию.
+                        wheels[2] = line;
+                        // Здесь проводится проверки окончания загрузки всех линий и загружается стартовый экран.
+                        for(i = 0; i < 5; i++) {
                           if(wheels[i] !== undefined){counter++}
                         }
                         if (counter === 5) {showStartScreen(wheels)}
@@ -789,10 +805,12 @@ $(document).ready(function(){
                       url: url + '_GetWheels/' + sessionID + "/" + 3,
                       dataType: 'JSONP',
                       type: 'GET',
-                      success: function(data) {
-                        var counter = 0;
-                        wheels[3] = data;
-                        for(var i = 0; i < 5; i++) {
+                      success: function(line) {
+                        var i, counter = 0;
+                        // Присваиваем определенному индексу массива wheels полученую линию.
+                        wheels[3] = line;
+                        // Здесь проводится проверки окончания загрузки всех линий и загружается стартовый экран.
+                        for(i = 0; i < 5; i++) {
                           if(wheels[i] !== undefined){counter++}
                         }
                         if (counter === 5) {showStartScreen(wheels)}
@@ -802,364 +820,397 @@ $(document).ready(function(){
                       url: url + '_GetWheels/' + sessionID + "/" + 4,
                       dataType: 'JSONP',
                       type: 'GET',
-                      success: function(data) {
-                        var counter = 0;
-                        wheels[4] = data;
-                        for(var i = 0; i < 5; i++) {
+                      success: function(line) {
+                        var i, counter = 0;
+                        // Присваиваем определенному индексу массива wheels полученую линию.
+                        wheels[4] = line;
+                        // Здесь проводится проверки окончания загрузки всех линий и загружается стартовый экран.
+                        for(i = 0; i < 5; i++) {
                           if(wheels[i] !== undefined){counter++}
                         }
                         if (counter === 5) {showStartScreen(wheels)}
                       }
                     });
+                    // Отправляем начальную ставку на сервер.
                     $.ajax({
-                      url: url + '_SetBet/' + sessionID + '/' + bet,
+                      url: url + '_SetBet/' + sessionID + '/' + 1,
                       dataType: 'JSONP',
                       type: 'GET',
-                      success: function(data) {
-                        // console.log("Ответ на ставку: " + data);
-                      }
+                      success: function() {}
                     });
+                    // Отправляем запрос на координаты всех линий.
                     $.ajax({
                       url: url + '_GetLines/' + sessionID,
                       dataType: 'JSONP',
                       type: 'GET',
                       success: function(data) {
+                        var i, j;
+                        // Координаты каждой линии разделены "|".
                         linesCoords = data.split("|");
-                        for(var i = 0; i < linesCoords.length; i++) {
+                        // Пройдемся по всем линиям и разберем координаты разделенные "@"
+                        for(i = 0; i < linesCoords.length; i++) {
                           linesCoords[i] = linesCoords[i].split("@");
-                          for (var j = 0; j < linesCoords[i].length; j++) {
+                          // Также разберем все координаты на массив [x, y], разделенные ","
+                          for (j = 0; j < linesCoords[i].length; j++) {
                             linesCoords[i][j] = linesCoords[i][j].split(",");
                           }
                         }
                       }
-                    });
-									}// Запрос Ready отдал нужный ответ
+                    }); // Конец запроса GetLines
+									}
 								}
-							});
+							});// Конец запроса Ready.
 						}
 					}
-				});
+				});// Конец запроса Play.
 			}
-		});
-	}
-	// Инициализируем игру по имени name
-	startGame(name);
+		});// Конец запроса Login.
+  }
+  // Инициализируем игру по имени nameOfPlayer.
+  startGame(nameOfPlayer);
 
-  $("body").on("keydown", function(event){
-    if(event.keyCode === 32 || event.which === 32) {
-      if(spinButton.alpha !== 0) getSpin();
-      spinButton.alpha = 0;
-      spinTachButton.alpha = 1;
-      for (var i = 0; i < autoplayID.length; i++) {
-        if(autoplayID[i]) {
-          clearInterval(autoplayID[i]);
-          maxBetTachButton.alpha = 0;
-          maxBetButton.alpha = 1;
-          autoplayButton.alpha = 1;
-          autoplayTachButton.alpha = 0;
-        }
+  // Функция showStartScreen(wheels) - отвечает за загрузку первого экрана игры. Параметром принимает массив линий, полученный от сервера.
+  function showStartScreen(wheels) {
+    var i;
+    // Пройдемся по всем линиям.
+    for (i = 0; i < wheels.length; i++) {
+      // Разделим элементы в массив по разделителю "@".
+      wheels[i] = wheels[i].split("@");
+      // Проведем переименование элементов полученных от сервера на номера [1..13].
+      renameLine(wheels[i]);
+    }
+    // Получим информацию о номерах текущего экрана.
+    currentScreenData = getFirstScreenData(wheels);
+    // И отобразим их.
+    showFirstScreen();
+
+    // Функция renameLine(line) - отвечает за переименование данных с сервера в более удобные номера [1..13].
+    function renameLine(line) {
+      var i;
+      // Перебираем всю линию.
+      for (i = 0; i < line.length; i++) {
+        if (line[i] === "j")       {line[i] = 1} // Символ "J".
+        if (line[i] === "iJ")      {line[i] = 2} // Символ Дворецкого.
+        if (line[i] === "q")       {line[i] = 3} // Символ "Q".
+        if (line[i] === "iQ")      {line[i] = 4} // Символ Графини.
+        if (line[i] === "k")       {line[i] = 5} // Символ "K".
+        if (line[i] === "ik")      {line[i] = 6} // Символ Германа.
+        if (line[i] === "a")       {line[i] = 7} // Символ "A".
+        if (line[i] === "iA")      {line[i] = 8} // Символ Лизы.
+        if (line[i] === "wild")    {line[i] = 9} // Символ Часов.
+        if (line[i] === "scatter") {line[i] = 10}// Символ Скаттера.
+        if (line[i] === "sw.sw1")  {line[i] = 11}// Верх Тройной Лизы.
+        if (line[i] === "sw.sw2")  {line[i] = 12}// Середина Тройной Лизы.
+        if (line[i] === "sw.sw3")  {line[i] = 13}// Низ Тройной Лизы.
       }
     }
-  });
-  // $("body").on("keyup", function(event){
-  //   if(event.keyCode === 32 || event.which === 32) {
-  //     spinButton.alpha = 1 ;
-  //     spinTachButton.alpha = 0;
-  //    }
-  // });
+    // Функция getFirstScreenData(wheels) - отвечает за формирование массива currentScreenData из полученных линий барабана.
+    function getFirstScreenData(wheels) {
+      var i, result = [];
+      // Пройдемся по всем линиям.
+      for (i = 0; i < wheels.length; i++){
+        // И вырежем первые пять элементов. (5 для того чтобы было по одному элементу по бокам экрана).
+        result[i] = wheels[i].slice(0, 5);
+      }
+      // Вернем массив первого экрана.
+      return result;
+    }
+    // Функция showFirstScreen() - отвечает за рисование первого экрана игры.
+    function showFirstScreen() {
+      var i;
+      for (i = 0; i < rowNumber; i++) {
+        // Создаем 5 новых линий
+        rows[i] = getFirstRow(i);
+        // Позиционируем их гозизонтально
+        rows[i].x = rowWidth*i;
+        // И добавляем в холст
+        gameStage.addChild(rows[i]);
+      }
 
-	function showStartScreen(wheels) {
+      // Функция getFirstRow(currentRow) - отвечает запостроение линии изображений полученных из currentScreenData.
+      function getFirstRow(currentRow) {
+        var row, img, i;
+        // Создаем новый контейнер (линию)
+        row = new createjs.Container();
+        // В каждую линию записуем по 5 картинок (3 на экране и по одной по боках)
+        for (i = 0; i < 5; i++) {
+          elementsMas[i] = currentScreenData[currentRow][i];
+          // Расчитываем позиции элементов по высоте (первый элемент будет за верхним краем)
+          elementsPositions[i] = elementHeight * (i - 1);
+          // Создаем нужную картинку
+          img = new createjs.Bitmap("img/game/" + elementsMas[i] + ".png");
+          // Позиционируем картинку
+          img.y = elementsPositions[i];
+          // Добавляем ее в линию
+          row.addChild(img);
+        }
+        // Возвращаем линию
+        return row;
+      }
+    }
+  }
 
-		for (var i = 0; i < wheels.length; i++) {
-			wheels[i] = wheels[i].split("@");
-			renameLine(wheels[i]);
-		}
-
-		currentScreen = getFirstPage(wheels);
-		getFirstScreen();
-
-	}
-
-	function getFirstPage(wheels) {
-		var result = [],
-		neededElements = 5;
-		for (var i = 0; i < wheels.length; i++){
-			result[i] = wheels[i].slice(0, neededElements);
-		}
-		return result;
-	}
-
-	function renameLine(line) {
-		for (var i = 0; i < line.length; i++) {
-			if (line[i] === "j") {line[i] = 1}
-			if (line[i] === "iJ") {line[i] = 2}
-			if (line[i] === "q") {line[i] = 3}
-			if (line[i] === "iQ") {line[i] = 4}
-			if (line[i] === "k") {line[i] = 5}
-			if (line[i] === "ik") {line[i] = 6}
-			if (line[i] === "a") {line[i] = 7}
-			if (line[i] === "iA") {line[i] = 8}
-			if (line[i] === "wild") {line[i] = 9}
-			if (line[i] === "scatter") {line[i] = 10}
-			if (line[i] === "sw") {line[i] = 11}
-			if (line[i] === "sw2") {line[i] = 12}
-			if (line[i] === "sw3") {line[i] = 13}
-		}
-	}
-
-	function getFirstRow(currentRow, subURL, opacity) {
-		var row, img, i;
-    subURL = subURL || "";
-		// Создаем новый контейнер (линию)
-		row = new createjs.Container();
-		// В каждую линию записуем по 5 картинок (3 на экране и по одной по боках)
-		for (i = 0; i < elementNumberOnScreen + 2; i++) {
-			// Записываем элементы полученные из ответа сервера (wheels)
-			elementsMas[i] = currentScreen[currentRow][i];
-			// Расчитываем позиции элементов по высоте (первый элемент будет за верхним краем)
-			elementsPositions[i] = elementHeight * (i - 1);
-			// Создаем нужную картинку
-			img = new createjs.Bitmap("img/game/" + subURL + elementsMas[i] + ".png");
-			// Позиционируем картинку
-			img.y = elementsPositions[i];
-      img.alpha = opacity;
-			// Добавляем ее в линию
-			row.addChild(img);
-		}
-		gameStage.update();
-		// Возвращаем линию
-		return row;
-	}
-
-	function getFirstScreen() {
-		for (var i = 0; i < rowNumber; i++) {
-			// Создаем 5 новых линий
-			rows[i] = getFirstRow(i, "", 1);
-			// Позиционируем их гозизонтально
-			rows[i].x = rowWidth*i;
-			// И добавляем в холст
-			gameStage.addChild(rows[i]);
-		}
-		gameStage.update();
-	}
-
-	function getNewRow(currentRow) {
-		var row, img, i;
-		// Создаем новую линию-контейнер
-		row = new createjs.Container();
-		// Заполняем ее элементами
-		for ( i = 0; i < elementNumberAll; i++ ) {
-
-			if ( i < 5 ) { // В конце линии будут выпадающие стоты
-				elementsMas[i] = nextScreen[currentRow][i];
-				img = new createjs.Bitmap("img/game/" + elementsMas[i] + ".png");
-			} else if ( i > 54) { // В начале линии будут теперешние слоты
-				elementsMas[i] = currentScreen[currentRow][i - 55];
-				img = new createjs.Bitmap("img/game/" + elementsMas[i] + ".png");
-			} else { // Остальные слоты будут случайными и размытыми
-				elementsMas[i] = Math.ceil(Math.random() * 10);
-				img = new createjs.Bitmap("img/game/blur/" + elementsMas[i] + "b.png");
-			}
-			// Рассчитываем позиции элементов с учетом выступов по одному элементу по краях
-			elementsPositions[i] = elementHeight * ( i + 1 + elementNumberOnScreen - elementNumberAll );
-			// Позиционирование элементов
-			img.y = elementsPositions[i];
-			// Добавляем их в линию
-			row.addChild(img);
-		}
-		gameStage.update();
-		// Возвращаем линию
-		return row;
-	}
-
-	function getNewScreen() {
+  // Функция showNewScreen() - отвечает за отображение нового экрана и столбиков при крутке.
+	function showNewScreen() {
+    // При загрузке нового экрана мы убираем все линии с экрана и убираем тени с номеров линий.
 		for (var j = 0; j < 21; j++) {
-			lines[j].alpha = 0;
-      // linesLight[j].alpha = 0;
-      if(numbers[j].shadow){numbers[j].shadow.offsetX = numbers[j].shadow.offsetY = numbers[j].shadow.blur = 0;}
-
+			lineImages[j].alpha = 0;
+      lineWinImages[j].alpha = 0;
+      if (lineNumbers[j].shadow) {lineNumbers[j].shadow.offsetX = lineNumbers[j].shadow.offsetY = lineNumbers[j].shadow.blur = 0}
 		}
+    // Также убираем текст выигрыша.
     gameStage.removeChild(winText);
+    // Создаем новые линии барабана.
 		for (var i = 0; i < rowNumber; i++) {
-			gameStage.removeChild(rows[i]);
+      // Но сначала удаляем все изображения предыдущих линий.
+      gameStage.removeChild(rows[i]);
+      // И выигрышных линий также.
       gameStage.removeChild(winRows[i]);
-			// Создаем 5 новых линий
+			// Создаем 5 новых линий.
 			rows[i] = getNewRow(i);
-			// Позиционируем их гозизонтально
+      // Также заготавливаем выигрышный экран.
+      winRows[i] = getNewWinRow(i);
+			// Позиционируем их гозизонтально.
 			rows[i].x = rowWidth*i;
-			// И добавляем в холст
-			gameStage.addChild(rows[i]);
+      winRows[i].x = rowWidth*i;
+			// И добавляем в холст.
+			gameStage.addChild(rows[i], winRows[i]);
 		}
-		gameStage.update();
+    // Функция getNewRow(currentRow) - отвечает за создание новой линии включая по концам результаты nextScreenData и currentScreenData.
+    function getNewRow(currentRow) {
+      var row, img, i;
+      // Создаем новую линию-контейнер
+      row = new createjs.Container();
+      // Заполняем ее элементами
+      for ( i = 0; i < 60; i++ ) {
+        if ( i < 5 ) { // В конце линии будут выпадающие стоты
+          elementsMas[i] = nextScreenData[currentRow][i];
+          img = new createjs.Bitmap("img/game/" + elementsMas[i] + ".png");
+        } else
+        if ( i > 54) { // В начале линии будут теперешние слоты
+          elementsMas[i] = currentScreenData[currentRow][i - 55];
+          img = new createjs.Bitmap("img/game/" + elementsMas[i] + ".png");
+        } else { // Остальные слоты будут случайными и размытыми
+          elementsMas[i] = Math.ceil(Math.random() * 10);
+          img = new createjs.Bitmap("img/game/blur/" + elementsMas[i] + "b.png");
+        }
+        // Рассчитываем позиции элементов с учетом выступов по одному элементу по краях
+        elementsPositions[i] = elementHeight * ( i + 1 + 3 - 60 );
+        // Позиционирование элементов
+        img.y = elementsPositions[i];
+        // Добавляем их в линию
+        row.addChild(img);
+      }
+      // Возвращаем линию
+      return row;
+    }
+
+    // Функция getNewWinRow(currentRow) - отвечает за создание новой победной линии по результам nextScreenData.
+    function getNewWinRow(currentRow) {
+      var row, img, i;
+      // Создаем новую линию-контейнер.
+      row = new createjs.Container();
+      // Заполняем ее элементами
+      for ( i = 0; i < 5; i++ ) {
+        elementsMas[i] = nextScreenData[currentRow][i];
+        img = new createjs.Bitmap("img/game/win/" + elementsMas[i] + ".png");
+        // Рассчитываем позиции элементов с учетом выступов по одному элементу по краях
+        elementsPositions[i] = elementHeight * ( i + 1 + 3 - 60 );
+        // Позиционирование элементов
+        img.y = elementsPositions[i];
+        img.alpha = 0;
+        // Добавляем их в линию
+        row.addChild(img);
+      }
+      // Возвращаем линию
+      return row;
+    }
 	}
 
-	function getSpin() {
+  // Функция spin() - отвечает за проведение крутки.
+	function spin() {
 		$.ajax({ // Запрос проверки Ready
 			url: url + '_Ready/' + sessionID,
 			dataType: 'JSONP',
 			type: 'GET',
-			success: function(data) {
-				if(data !== undefined) { // Если есть ответ
-					$.ajax({ // То отравляем запрос-крутку Roll
+			success: function(someData) {
+				if(someData !== undefined) { // Если есть ответ.
+					$.ajax({ // То отравляем запрос-крутку Roll.
 						url: url + '_Roll/' + sessionID,
 						dataType: 'JSONP',
 						type: 'GET',
-						success: function(data) {
-              spinButton.alpha = 0;
-              spinTachButton.alpha = 1;
-              winTotal.text = "0.00";
-              cashTotal.text = (+cashTotal.text - (+betTotal.text)).toFixed(2);
-              coinsSum.text = (+cashTotal.text/(+coinsValue.text)).toFixed(0);
-              numbersOfLines = [];
-							// Забираем нужные нам индексы выпавших слотов
-							var indexes = data.Result.Indexes;
-							// Показываем выпавшие линии
-							winLines = data.Result.LinesResult;
-              totalWin = data.Result.TotalWin;
-							console.log(winLines);
-              console.log(totalWin);
-              console.log(data.Result);
-							// Записываем значения конечного экрана
-							for (var i = 0; i < 5; i++){
-								nextScreen[i] = [];
-								for (var j = 0; j < 5; j++){
-									nextScreen[i].push(wheels[i][indexes[i] + j - 1]);
-								}
-							}
-							// Отображаем необходимые линии
-							getNewScreen();
-							// Прокручиваем линии до нужного нам экрана
-							var spins = [],
-									time = 1000;
-							for (var i = 0; i < rows.length; i++) {
-								time += 400;
-								spins[i] = createjs.Tween.get(rows[i], {loop: false})
-									.to({ y: -elementsPositions[1]}, time , createjs.Ease.getBackInOut(0.5));
-							}
-							// Делаем перезапись теперешнего экрана
-              copyScreenFromTo (nextScreen, currentScreen);
+						success: function(rollData) {
+              // Разбираем результаты.
+              var indexes = rollData.Result.Indexes;
+							var winLines = rollData.Result.LinesResult;
+              winCoins = rollData.Result.TotalWin;
 
-							for (var i = 0; i < winLines.length; i++) {
-								var someLine = winLines[i];
-                var numberOfElements = parseInt(winLines[i]);
-                // console.log(numberOfElements);
-								var indexOfLine = someLine.indexOf("#");
-								var numberOfLine = someLine.substr(indexOfLine + 1);
-                numbersOfLines[i] = [];
-                numbersOfLines[i].push(+numberOfLine, numberOfElements);
-								// if (numberOfLine != -1) {
-								// 	setTimeout(showLine.bind(null, numberOfLine, 1), 3200);
-								// }
-							}
-              function setSpinButton() {
-                spinButton.alpha = 1;
-                spinTachButton.alpha = 0;
-              }
-              setTimeout(setSpinButton.bind(null), 3500);
+              // Обнуляем массив с выпавшими линиями.
+              numbersOfLines = [];
+              // Обнуляем выигрыш.
+              winTotal.text = "0.00";
+              // Забираем деньги за крутку.
+              cashTotal.text = (+cashTotal.text - (+betTotal.text)).toFixed(2);
+              // Забираем монеты за крутку.
+              coinsSum.text = (+cashTotal.text/(+coinsValue.text)).toFixed(0);
+
+              // Записываем значения конечного экрана.
+              getNextScreenData();
+
+							// Отображаем необходимые линии.
+							showNewScreen();
+
+              // Прокручиваем линии до нужного нам экрана.
+              animateSpin();
+
+							// Делаем перезапись теперешнего экрана.
+              copyScreenFromTo (nextScreenData, currentScreenData);
+
+              // Получаем номера выпавших линий.
+              getNumbersOfLines();
+
+              // Если у нас есть выпавшие линии, то показываем выигрышный экран.
               if(winLines[0] !== undefined) {
-                setTimeout(showWinScreen.bind(null), 3200);
+                setTimeout(showWinScreen.bind(null), timeOfSpin - 200);
               }
+
 						}
 					});// _Roll AJAX End
 				}
 			}
 		});// _Ready AJAX End
-	}
 
-  function copyScreenFromTo (nextScreen, currentScreen) {
-    var i, j;
-    for (i = 0; i < 5; i++) {
-      for (j = 0; j < 5; j++) {
-        currentScreen[i][j] = nextScreen[i][j];
+    // Функция animateSpin() - отвечает за анимирование крутки.
+    function animateSpin() {
+      var i, time = 1000;
+      for(i = 0; i < rows.length; i++) {
+        time += 400;
+        createjs.Tween.get(rows[i])
+          .to({ y: -elementsPositions[1]}, time , createjs.Ease.getBackInOut(0.5));
       }
     }
-  }
 
-  function showWinScreen() {
-    var someVar = +(totalWin*parseFloat(coinsValue.text)).toFixed(2);
-    winTotal.text = someVar.toFixed(2);
-    cashTotal.text = (+parseFloat(cashTotal.text) + someVar).toFixed(2);
-
-
-
-    winText = new createjs.Text(totalWin, "bold 120px Arial", "#efe947");
-    winText.x = 630;
-    winText.y = 335;
-    winText.scaleX = winText.scaleY = 0;
-    if(+totalWin >= 10 && +totalWin < 100) {
-      createjs.Tween.get(winText, {loop: true})
-      .to({ scaleX: 1, scaleY: 1, x: 575, y: 300}, 300)
-      .to({ alpha: 0.75 }, 500)
-      .to({ alpha: 1 }, 500)
-      .to({ alpha: 0.75 }, 500)
-      .to({ alpha: 1 }, 500)
-      .to({ alpha: 0.75 }, 500)
-      .to({ alpha: 1 }, 500)
-      .to({ alpha: 0.75 }, 500)
-      .to({ alpha: 1 }, 500);
-    }
-    if(+totalWin < 10) {
-      createjs.Tween.get(winText, {loop: true})
-      .to({ scaleX: 1, scaleY: 1, x: 590, y: 300}, 300)
-      .to({ alpha: 0.75 }, 500)
-      .to({ alpha: 1 }, 500)
-      .to({ alpha: 0.75 }, 500)
-      .to({ alpha: 1 }, 500)
-      .to({ alpha: 0.75 }, 500)
-      .to({ alpha: 1 }, 500)
-      .to({ alpha: 0.75 }, 500)
-      .to({ alpha: 1 }, 500);
-    }
-    winText.shadow = new createjs.Shadow("#000000", 5, 10, 6);
-    gameStage.addChild(winText);
-
-
-    var clockSpriteData = {
-      images: ["img/watch.png"],
-      frames: {width: 240, height: 225},
-      // framerate: 24,
-      animations: {
-        run: [0, 3]
+    // Функция getNumbersOfLines() - отвечает за получение номеров выпавших линий, и количества выпавших элементов.
+    function getNumbersOfLines() {
+      var i, numberOfElements, indexOfLine, numberOfLine;
+      for (i = 0; i < winLines.length; i++) {
+        numbersOfLines[i] = [];
+        numberOfElements = parseInt(winLines[i]);
+        indexOfLine = winLines[i].indexOf("#");
+        numberOfLine = winLines[i].substr(indexOfLine + 1);
+        numbersOfLines[i].push(+numberOfLine, numberOfElements);
       }
-    };
-    var clockSpriteSheet = new createjs.SpriteSheet(clockSpriteData);
-    var clockAnimation = new createjs.Sprite(clockSpriteSheet, "run");
+    }
 
-    for(var i = 0; i < numbersOfLines.length; i++) {
-      var numberOfCurrentLine = numbersOfLines[i][0];
-      var numberOfCurrentElements = numbersOfLines[i][1];
-      if (numberOfCurrentLine === -1) continue;
-      showLine(numberOfCurrentLine);
-      numbers[numberOfCurrentLine-1].shadow = new createjs.Shadow("#FFFFFF", 1, 1, 2);
-      for(var j = 0; j < numberOfCurrentElements; j++) {
-        var currentRowNumber = linesCoords[numberOfCurrentLine-1][j][0];
-        var currentElementNumber = +linesCoords[numberOfCurrentLine-1][j][1] + 1;
-        var currentElement = rows[currentRowNumber].children[currentElementNumber];
-        var currentPositionY = currentElement.y;
-        if(currentElement.image){
-          var currentURL = currentElement.image.currentSrc;
-          var currentElementImageNumber = currentURL.substr(currentURL.indexOf(".png") - 1, 1);
-          // if(currentElementImageNumber == 9) {
-          //   console.log("I am here and I am trying to run animation!!!");
-          //   var newClock = clockAnimation.clone();
-          //   newClock.y = currentPositionY;
-          //   newClock.play("run");
-          //   rows[currentRowNumber].children.splice(currentElementNumber, 1, newClock);
-          // }
-          if(currentElementImageNumber){
-            var newImg = new createjs.Bitmap("img/game/win/" + currentElementImageNumber + ".png");
-            newImg.y = currentPositionY;
-            createjs.Tween.get(newImg, { loop: true })
-            .to({ alpha: 1, scaleX: 1.02, scaleY: 1.02, x: -3}, 500)
-            .to({ alpha: 0.9, scaleX: 1, scaleY: 1, x: 0}, 500)
-            .to({ alpha: 1, scaleX: 1, scaleY: 1, x: 0}, 300);
-            rows[currentRowNumber].children.splice(currentElementNumber, 1, newImg);
-          }
-
+    // Функция getNextScreenData() - отвечает за получение результатов следующего экрана.
+    function getNextScreenData() {
+      var i, j;
+      for (i = 0; i < 5; i++){
+        nextScreenData[i] = [];
+        for (j = 0; j < 5; j++){
+          nextScreenData[i].push(wheels[i][indexes[i] + j - 1]);
         }
       }
     }
-    // console.log(numbersOfLines);
+
+    // Функция copyScreenFromTo (nextScreenData, currentScreenData) - отвечает за глубокое копирование двумерного массива nextScreenData в currentScreenData.
+    function copyScreenFromTo (nextScreenData, currentScreenData) {
+      var i, j;
+      for (i = 0; i < 5; i++) {
+        for (j = 0; j < 5; j++) {
+          currentScreenData[i][j] = nextScreenData[i][j];
+        }
+      }
+    }
+	}
+
+  // Функция showWinScreen() - отвечает за показ победного экрана.
+  function showWinScreen() {
+    // Определяем выигрыш в деньгах.
+    winTotal.text = +(winCoins*parseFloat(coinsValue.text)).toFixed(2);
+    // И общую сумму депозита.
+    cashTotal.text = (+parseFloat(cashTotal.text) + someVar).toFixed(2);
+
+    // Проходимся по массиву победных линий.
+    for(var i = 0; i < numbersOfLines.length; i++) {
+      var numberOfCurrentLine = numbersOfLines[i][0]; // Номер текущей линии.
+      var numberOfCurrentElements = numbersOfLines[i][1]; // Количество выпавших элементов.
+      // В случае выпадения скаттеров.
+      if (numberOfCurrentLine === -1) {
+        // Пройдемся по выигрышному экрану.
+        for (var rowIndex = 0; rowIndex < 5; rowIndex++) {
+          for (var elementIndex = 0; elementIndex < 5; elementIndex++) {
+            // Если выпал скаттер.
+            if(winRows[rowIndex].children[elementIndex].image.currentSrc.indexOf("game/win/10.png") !== -1) {
+              var winScatter = winRows[rowIndex].children[elementIndex];
+              // То делаем его видимым.
+              winScatter.alpha = 1;
+              // И запускаем анимацию.
+              createjs.Tween.get(winScatter, { loop: true })
+              .to({ alpha: 1, scaleX: 1.02, scaleY: 1.02, x: -3}, 500)
+              .to({ alpha: 0.9, scaleX: 1, scaleY: 1, x: 0}, 500)
+              .to({ alpha: 1, scaleX: 1, scaleY: 1, x: 0}, 300);
+            }
+          }
+        }
+      } else { // Если выпала нормальная линия.
+        // То мы показываем выигрышную линию.
+        showWinLine(numberOfCurrentLine);
+        // И подсвечиваем нужный номер линии.
+        lineNumbers[numberOfCurrentLine-1].shadow = new createjs.Shadow("#FFFFFF", 1, 1, 2);
+
+        for(var j = 0; j < numberOfCurrentElements; j++) {
+          var currentRowNumber, currentElementNumber, currentElement;
+          // Находим выигрышные элементы по координатам.
+          currentRowNumber = +linesCoords[numberOfCurrentLine-1][j][0];
+          currentElementNumber = +linesCoords[numberOfCurrentLine-1][j][1] + 1;
+          currentElement = winRows[currentRowNumber].children[currentElementNumber];
+          // Отображаем нужный элемент.
+          currentElement.alpha = 1;
+          // И задаем ему анимацию.
+          createjs.Tween.get(currentElement, { loop: true })
+          .to({ alpha: 1, scaleX: 1.02, scaleY: 1.02, x: -3}, 500)
+          .to({ alpha: 0.9, scaleX: 1, scaleY: 1, x: 0}, 500)
+          .to({ alpha: 1, scaleX: 1, scaleY: 1, x: 0}, 300);
+        }
+
+      }
+    } // Конец обработки выигрышных линий
+
+    // Создаем выигрышную надпись.
+    winText = new createjs.Text(winCoins, "bold 120px Arial", "#efe947");
+    // Позиционируем ее.
+    winText.x = 630;  winText.y = 335;
+    // И добавляемей тень.
+    winText.shadow = new createjs.Shadow("#000000", 5, 10, 6);
+    // Добавляем ее на игровой холст.
+    gameStage.addChild(winText);
+    // В зависимости от величины выигрыша анимируем надпись.
+    if(+winCoins >= 10 && +winCoins < 100) {
+      animateWinText(575);
+    }
+    if(+winCoins < 10) {
+      animateWinText(575);
+    }
+
+    // Функция animateWinText(textX) - отвечает за анимирование победной надписи.
+    function animateWinText(textX) {
+      createjs.Tween.get(winText, {loop: true})
+      .to({ scaleX: 1, scaleY: 1, x: textX, y: 300}, 300)
+      .to({ alpha: 0.75 }, 500)
+      .to({ alpha: 1 }, 500)
+      .to({ alpha: 0.75 }, 500)
+      .to({ alpha: 1 }, 500)
+      .to({ alpha: 0.75 }, 500)
+      .to({ alpha: 1 }, 500)
+      .to({ alpha: 0.75 }, 500)
+      .to({ alpha: 1 }, 500);
+    }
+    // Функция showWinLine(numberOfLine) - отвечает за показ нужных победных линий.
+    function showWinLine(numberOfLine) {
+      lineWinImages[j].alpha = 1;
+    }
+
   }
 
 }); // Конец функции Init()

@@ -30,12 +30,12 @@
 			position: absolute;
 			z-index: 10;
 			margin-top: 6.45%;
-			left: 29.5%;
+			left: 29.18%;
 			display: block;
 			box-sizing: border-box;
 			max-width: 1280px;
 		}
-		#middleCanvas {
+		#panelCanvas {
 			position: absolute;
 			z-index: 15;
 			top: 0;
@@ -52,7 +52,7 @@
 			display: block;
 			box-sizing: border-box;
 			max-width: 1920;
-			border: 1px solid #222;
+			/*border: 1px solid #222;*/
 		}
 		#spinButton {
 			padding: 10px 30px;
@@ -65,9 +65,9 @@
 
 	<!-- <button id="spinButton">Spin</button> -->
 	<div id="game">
-		<canvas id="bgCanvas"></canvas>
-		<canvas id="middleCanvas"></canvas>
-		<canvas id="gameCanvas"></canvas>
+		<canvas id="bgCanvas" width="1920" height="1080"></canvas>
+		<canvas id="panelCanvas" width="1920" height="1080"></canvas>
+		<canvas id="gameCanvas" width="1280" height="720"></canvas>
 	</div>
 
 	<!-- rigger -->
@@ -85,7 +85,6 @@
 	<script src="https://code.createjs.com/tweenjs-0.6.2.min.js"></script>
 	<script src="https://code.createjs.com/preloadjs-0.6.2.min.js"></script>
 	<script src="game.js"></script>
-	<script src="bg.js"></script>
 
 </body>
 </html>
