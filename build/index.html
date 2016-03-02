@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<!--[if IE 8 ]><html class="ie ie8" lang="en"> <![endif]-->
+<!--[if (gte IE 9)|!(IE)]><!--><html lang="en"> <!--<![endif]-->
+
+<head>
+
+	<meta charset="utf-8">
+	<meta http-equiv="X-UA-Compatible" content="IE=edge">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+
+	<title>CreateJS</title>
+
+	<link rel="shortcut icon" href="img/favicon/favicon.ico" type="image/x-icon">
+	<link rel="apple-touch-icon" href="img/favicon/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="img/favicon/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="img/favicon/apple-touch-icon-114x114.png">
+
+	<link rel="stylesheet" href="main.css">
+
+	<style>
+		body {
+			text-align: center;
+		}
+		#game {
+			position: relative;
+			width: 80%;
+			margin: 30px auto 0 auto;
+		}
+		#gameCanvas {
+			position: absolute;
+			z-index: 10;
+			margin-top: 6.45%;
+			left: 29.18%;
+			display: block;
+			box-sizing: border-box;
+			max-width: 1280px;
+		}
+		#panelCanvas {
+			position: absolute;
+			z-index: 15;
+			top: 0;
+			left: 0;
+			display: block;
+			box-sizing: border-box;
+			max-width: 1920;
+		}
+		#bgCanvas {
+			position: absolute;
+			z-index: 5;
+			top: 0;
+			left: 0;
+			display: block;
+			box-sizing: border-box;
+			max-width: 1920;
+			/*border: 1px solid #222;*/
+		}
+		#spinButton {
+			padding: 10px 30px;
+		}
+	</style>
+
+</head>
+
+<body>
+
+	<!-- <button id="spinButton">Spin</button> -->
+	<div id="game">
+		<canvas id="bgCanvas" width="1920" height="1080"></canvas>
+		<canvas id="panelCanvas" width="1920" height="1080"></canvas>
+		<canvas id="gameCanvas" width="1280" height="720"></canvas>
+	</div>
+	<button onclick="doorsLevel(1);" style="display: block;">Хочу "ДВЕРИ"!!!</button>
+
+	<!-- rigger -->
+		<!-- To include some template use //= assets/templates/<name>.html -->
+	<!-- /rigger -->
+
+	<!--[if lt IE 9]>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/es5-shim/4.4.1/es5-shim.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.1.22/require.min.js"></script>
+	<![endif]-->
+
+	<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+	<script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
+	<script src="https://code.createjs.com/tweenjs-0.6.2.min.js"></script>
+	<script src="https://code.createjs.com/preloadjs-0.6.2.min.js"></script>
+	<script src="game.js"></script>
+
+</body>
+</html>
