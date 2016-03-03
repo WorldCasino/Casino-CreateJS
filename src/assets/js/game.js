@@ -1218,13 +1218,15 @@ var winCoins,             // Это значение выигрыша.
 }); // Конец функции Init()
 
 
+
+
 function doorsLevel(levelNumber) {
 
   var door1, door2, door3, door4, door5,
-      multiply, bonusNumber, winBonus,
-      winIMG, failIMG, win_OR_fail,
-      bgIMG, firstDarkness,
-      newLevel, counter;
+  multiply, bonusNumber, winBonus,
+  winIMG, failIMG, win_OR_fail,
+  bgIMG, firstDarkness,
+  newLevel, counter;
 
   // Очистим экраны.
   counter = 0;
@@ -1235,7 +1237,7 @@ function doorsLevel(levelNumber) {
   firstDarkness = new createjs.Shape();
   firstDarkness.graphics.beginFill("#000").drawRect(0, 0, 1920, 1080);
   createjs.Tween.get(firstDarkness)
-    .to({alpha: 0}, 1000);
+  .to({alpha: 0}, 1000);
 
 
 
@@ -1276,7 +1278,7 @@ function doorsLevel(levelNumber) {
   door1 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door1.png");
   door1.x = 420; door1.y = 350;
   door2 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door2.png");
-  door2.x = 635; door2.y = 360;
+  door2.x = 635; door2.y = 370;
   door3 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door3.png");
   door3.x = 845; door3.y = 380;
   door4 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door4.png");
@@ -1294,7 +1296,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 1500);
       }
     }
@@ -1309,7 +1311,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 1500);
       }
     }
@@ -1324,7 +1326,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 1500);
       }
     }
@@ -1339,7 +1341,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 1500);
       }
     }
@@ -1354,7 +1356,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 3000, Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 3000, Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1378,15 +1380,20 @@ function doorsLevel(levelNumber) {
   var room2SpriteSheet = new createjs.SpriteSheet(room2Data);
   var room2 = {};
   room2.door1open = new createjs.Sprite(room2SpriteSheet, "door1open");
-  room2.door1open.x = 415; room2.door1open.y = 350; room2.door1open.stop();
+  room2.door1open.x = 413; room2.door1open.y = 351; room2.door1open.stop();
+  room2.door1open.scaleX = 0.95; room2.door1open.scaleY = 0.97; room2.door1open.skewX = 0.5; room2.door1open.rotation = -1;
   room2.door2open = new createjs.Sprite(room2SpriteSheet, "door2open");
-  room2.door2open.x = 635; room2.door2open.y = 360; room2.door2open.stop();
+  room2.door2open.x = 636; room2.door2open.y = 367; room2.door2open.stop();
+  room2.door2open.scaleX = 0.94; room2.door2open.scaleY = 0.91;
   room2.door3open = new createjs.Sprite(room2SpriteSheet, "door3open");
-  room2.door3open.x = 855; room2.door3open.y = 370; room2.door3open.stop();
+  room2.door3open.x = 859; room2.door3open.y = 370; room2.door3open.stop();
+  room2.door3open.scaleX = 0.94; room2.door3open.scaleY = 0.9;
   room2.door4open = new createjs.Sprite(room2SpriteSheet, "door4open");
-  room2.door4open.x = 1075; room2.door4open.y = 360; room2.door4open.stop();
+  room2.door4open.x = 1077; room2.door4open.y = 361; room2.door4open.stop();
+  room2.door4open.scaleX = 0.97; room2.door4open.scaleY = 0.93;
   room2.door5open = new createjs.Sprite(room2SpriteSheet, "door5open");
-  room2.door5open.x = 1295; room2.door5open.y = 345; room2.door5open.stop();
+  room2.door5open.x = 1291; room2.door5open.y = 335; room2.door5open.stop();
+  room2.door5open.scaleX = 1.04; room2.door5open.scaleY = 1.02; room2.door5open.skewX = -0.5; room2.door5open.rotation = 1;
 
   room2.door1open.on("click", function(){
     if (counter === 0) {
@@ -1397,7 +1404,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1411,7 +1418,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1425,7 +1432,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1439,7 +1446,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1453,7 +1460,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1477,15 +1484,20 @@ function doorsLevel(levelNumber) {
   var room3SpriteSheet = new createjs.SpriteSheet(room3Data);
   var room3 = {};
   room3.door1open = new createjs.Sprite(room3SpriteSheet, "door1open");
-  room3.door1open.x = 415; room3.door1open.y = 350; room3.door1open.stop();
+  room3.door1open.x = 413; room3.door1open.y = 351; room3.door1open.stop();
+  room3.door1open.scaleX = 0.95; room3.door1open.scaleY = 0.97; room3.door1open.skewX = 0.5; room3.door1open.rotation = -1;
   room3.door2open = new createjs.Sprite(room3SpriteSheet, "door2open");
-  room3.door2open.x = 635; room3.door2open.y = 360; room3.door2open.stop();
+  room3.door2open.x = 638; room3.door2open.y = 367; room3.door2open.stop();
+  room3.door2open.scaleX = 0.93; room3.door2open.scaleY = 0.91;
   room3.door3open = new createjs.Sprite(room3SpriteSheet, "door3open");
-  room3.door3open.x = 855; room3.door3open.y = 370; room3.door3open.stop();
+  room3.door3open.x = 859; room3.door3open.y = 370; room3.door3open.stop();
+  room3.door3open.scaleX = 0.93; room3.door3open.scaleY = 0.9;
   room3.door4open = new createjs.Sprite(room3SpriteSheet, "door4open");
-  room3.door4open.x = 1075; room3.door4open.y = 360; room3.door4open.stop();
+  room3.door4open.x = 1080; room3.door4open.y = 361; room3.door4open.stop();
+  room3.door4open.scaleX = 0.96; room3.door4open.scaleY = 0.93;
   room3.door5open = new createjs.Sprite(room3SpriteSheet, "door5open");
-  room3.door5open.x = 1295; room3.door5open.y = 345; room3.door5open.stop();
+  room3.door5open.x = 1293; room3.door5open.y = 335; room3.door5open.stop();
+  room3.door5open.scaleX = 1.04; room3.door5open.scaleY = 1.02; room3.door5open.skewX = -0.5; room3.door5open.rotation = 1;
 
   room3.door1open.on("click", function(){
     if (counter === 0) {
@@ -1496,7 +1508,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1510,7 +1522,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1524,7 +1536,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1538,7 +1550,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1552,7 +1564,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1576,15 +1588,20 @@ function doorsLevel(levelNumber) {
   var room4SpriteSheet = new createjs.SpriteSheet(room4Data);
   var room4 = {};
   room4.door1open = new createjs.Sprite(room4SpriteSheet, "door1open");
-  room4.door1open.x = 415; room4.door1open.y = 350; room4.door1open.stop();
+  room4.door1open.x = 413; room4.door1open.y = 351; room4.door1open.stop();
+  room4.door1open.scaleX = 0.95; room4.door1open.scaleY = 0.97; room4.door1open.skewX = 0.5; room4.door1open.rotation = -1;
   room4.door2open = new createjs.Sprite(room4SpriteSheet, "door2open");
-  room4.door2open.x = 635; room4.door2open.y = 360; room4.door2open.stop();
+  room4.door2open.x = 638; room4.door2open.y = 367; room4.door2open.stop();
+  room4.door2open.scaleX = 0.93; room4.door2open.scaleY = 0.91;
   room4.door3open = new createjs.Sprite(room4SpriteSheet, "door3open");
-  room4.door3open.x = 855; room4.door3open.y = 370; room4.door3open.stop();
+  room4.door3open.x = 859; room4.door3open.y = 370; room4.door3open.stop();
+  room4.door3open.scaleX = 0.93; room4.door3open.scaleY = 0.9;
   room4.door4open = new createjs.Sprite(room4SpriteSheet, "door4open");
-  room4.door4open.x = 1075; room4.door4open.y = 360; room4.door4open.stop();
+  room4.door4open.x = 1080; room4.door4open.y = 361; room4.door4open.stop();
+  room4.door4open.scaleX = 0.96; room4.door4open.scaleY = 0.93;
   room4.door5open = new createjs.Sprite(room4SpriteSheet, "door5open");
-  room4.door5open.x = 1295; room4.door5open.y = 345; room4.door5open.stop();
+  room4.door5open.x = 1293; room4.door5open.y = 335; room4.door5open.stop();
+  room4.door5open.scaleX = 1.04; room4.door5open.scaleY = 1.02; room4.door5open.skewX = -0.5; room4.door5open.rotation = 1;
 
   room4.door1open.on("click", function(){
     if (counter === 0) {
@@ -1595,7 +1612,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1609,7 +1626,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1623,7 +1640,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1637,7 +1654,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1651,7 +1668,7 @@ function doorsLevel(levelNumber) {
       if (newLevel) {
         panelStage.addChild(winBonus);
         createjs.Tween.get(winBonus)
-          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
         setTimeout(doorsLevel.bind(null, newLevel), 2000);
       }
     }
@@ -1665,4 +1682,137 @@ function doorsLevel(levelNumber) {
   if(levelNumber === 4) {panelStage.addChild(dark1, room4.door1open, dark2, room4.door2open, dark3, room4.door3open, dark4, room4.door4open, dark5, room4.door5open, bgIMG, firstDarkness);}
   if(levelNumber === 5) {panelStage.addChild(bgIMG, firstDarkness);
   }
+}
+
+
+function freeSpins() {
+  // Очистим экран.
+  bgStage.removeAllChildren();
+  panelStage.removeAllChildren();
+  // gameStage.removeAllChildren();
+
+  var bgIMG = new createjs.Bitmap("img/free spins/bg.png");
+  var germanBG = new createjs.Bitmap("img/free spins/germanBG.png");
+  var panelBG = new createjs.Bitmap("img/free spins/panelBG.png");
+  bgStage.addChild(bgIMG, germanBG);
+  panelStage.addChild(panelBG);
+
+  // Функция drawLines() - отвечает за прорисовку и поведение линий-подсказок и номеров к ним.
+  function drawLines() {
+    // Рисуем линии.
+    drawLineImages();
+    // Рисуем номера к линиям.
+    drawLineNumbers();
+    // Функция drawLineImages() - отвечает за прорисовку и позиционирование линий.
+    function drawLineImages() {
+      var img, i;
+      for(i = 1; i <= 21; i++) {
+        // Создаем изображение для 21-ой линии.
+        img = new createjs.Bitmap("img/Lines/Line" + i + ".png");
+        // Делаем его невидимым.
+        img.alpha = 0;
+        // Рисуем на игровом холсте.
+        gameStage.addChild(img);
+        // И добавляем во внешний массив lineImages.
+        lineImages.push(img);
+      }
+      // Позиционируем линии на холсте.
+      lineImages[0].y = 334;
+      lineImages[1].y = 139;
+      lineImages[2].y = 574;
+      lineImages[3].y = 54;
+      lineImages[4].y = 94;
+      lineImages[5].y = 90;
+      lineImages[6].y = 335;
+      lineImages[7].x = 85;   lineImages[7].y = 144;
+      lineImages[8].y = 288;
+      lineImages[9].y = 380;
+      lineImages[10].y = 108;
+      lineImages[11].x = 85;  lineImages[11].y = 105;
+      lineImages[12].x = 85;  lineImages[12].y = 45;
+      lineImages[13].x = 85;  lineImages[13].y = 104;
+      lineImages[14].x = 85;  lineImages[14].y = 92;
+      lineImages[15].x = 85;  lineImages[15].y = 99;
+      lineImages[16].x = 85;  lineImages[16].y = 184;
+      lineImages[17].y = 137;
+      lineImages[18].y = 105;
+      lineImages[19].y = 379;
+      lineImages[20].x = 105; lineImages[20].y = 98;
+      // Копируем изображения в массив lineWinImages.
+      for(i = 0; i <= 20; i++) {
+        lineWinImages.push(lineImages[i].clone());
+        gameStage.addChild(lineWinImages[i]);
+      }
+    }
+    // Функция drawLineNumbers()- отвечает за прорисовку номеров к линиям-подсказкам.
+    function drawLineNumbers() {
+      var text, hit, i;
+      for (i = 1; i <= 22; i++) { // Считаем до 22 из-за дублирования 1-го номера.
+        // Создаем номера линий.
+        text = new createjs.Text(i, "20px Arial", "#ddcb8c");
+        // И добавляем их во внешний массив lineNumbers.
+        lineNumbers.push(text);
+        // Создаем вокруг номеров круги (hitArea) для взаимодействия с мышью.
+        hit = new createjs.Shape();
+        hit.graphics.beginFill("#000").drawCircle(text.getMeasuredWidth()/2, text.getMeasuredHeight()/2, 19);
+        text.hitArea = hit;
+        // Когда мышь попадает на номер
+        text.on("mouseover", function(){
+          //  - мы показываем линию.
+          showLine(this.text);
+          //  - и делаем тень для номера.
+          this.shadow = new createjs.Shadow("#FFFFFF", 1, 1, 2);
+        });
+        // Когда мышь уходит
+        text.on("mouseout", function(){
+          //  - мы убираем линию.
+          hideLine(this.text);
+          //  - и обнуляем тень.
+          this.shadow.offsetX = this.shadow.offsetY = this.shadow.blur = 0;
+        });
+      } // Конец цикла for(i)
+      lineNumbers[21].text = 1; // У нас два первых номера.
+      // Позиционируем все номера линий относительно верхнего левого угла.
+      lineNumbers[0].x = 549; lineNumbers[0].y = 455;
+      lineNumbers[1].x = 1855; lineNumbers[1].y = 257;
+      lineNumbers[2].x = 1855; lineNumbers[2].y = 697;
+      lineNumbers[3].x = 549; lineNumbers[3].y = 165;
+      lineNumbers[4].x = 549; lineNumbers[4].y = 789;
+      lineNumbers[5].x = 549; lineNumbers[5].y = 210;
+      lineNumbers[6].x = 550; lineNumbers[6].y = 744;
+      lineNumbers[7].x = 1855; lineNumbers[7].y = 548;
+      lineNumbers[8].x = 549; lineNumbers[8].y = 409;
+      lineNumbers[9].x = 542; lineNumbers[9].y = 650;
+      lineNumbers[10].x = 543; lineNumbers[10].y = 303;
+      lineNumbers[11].x = 1848; lineNumbers[11].y = 789;
+      lineNumbers[12].x = 1848; lineNumbers[12].y = 165;
+      lineNumbers[13].x = 1848; lineNumbers[13].y = 744;
+      lineNumbers[14].x = 1848; lineNumbers[14].y = 212;
+      lineNumbers[15].x = 1848; lineNumbers[15].y = 651;
+      lineNumbers[16].x = 1848; lineNumbers[16].y = 304;
+      lineNumbers[17].x = 543; lineNumbers[17].y = 257;
+      lineNumbers[18].x = 543; lineNumbers[18].y = 697;
+      lineNumbers[19].x = 543; lineNumbers[19].y = 501;
+      lineNumbers[20].x = 1850; lineNumbers[20].y = 501;
+      lineNumbers[21].x = 1855; lineNumbers[21].y = 455;
+      // Рисуем все номера линий на холсте панели управления.
+      for (var i = 0; i < lineNumbers.length; i++) {
+        panelStage.addChild(lineNumbers[i]);
+      }
+    }
+    // Функция showLine(number) - показ линии-подсказки с номером number.
+    function showLine(number) {
+      lineImages[number-1].alpha = 1;
+    }
+    // Функция hideLine(number) - скрывание линии-подсказки с номером number.
+    function hideLine(number) {
+      lineImages[number-1].alpha = 0;
+    }
+  }
+
+  var lineNumbers = [],  // массив номеров-подсказок линий.
+      lineImages = [],   // массив изображений линий-подсказок.
+      lineWinImages = [];// массив изображений победных линий.
+  // Рисуем линии и номера к ним.
+  drawLines();
 }
