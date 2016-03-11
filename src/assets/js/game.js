@@ -9,9 +9,26 @@ var BG_WIDTH = 1920,     // Размеры заднего пална.
 // Создаем новые Stage для каждого холста.
 var	bgStage = new createjs.Stage("bgCanvas"),       // Холст заднего плана.
     panelStage = new createjs.Stage("panelCanvas"), // Холст панели управления.
-    gameStage = new createjs.Stage("gameCanvas");   // Холст экрана слотов.
+    gameStage = new createjs.Stage("gameCanvas"),   // Холст экрана слотов.
+    doorsStage = new createjs.Stage("doorsCanvas");
 
-$(document).ready(function(){
+// функция которая отвечает за фулскрин.
+function launchFullScreen(e) {
+    e.requestFullScreen ? e.requestFullScreen() : e.mozRequestFullScreen ? e.mozRequestFullScreen() : e.webkitRequestFullScreen && e.webkitRequestFullScreen()
+}
+
+if($("html").hasClass("ios")||$("html").hasClass("iphone")) {
+  $(document).bind('touchmove', false);
+}
+
+$(document).ready(init);
+
+function init(){
+
+  // panelStage.alpha = 0;
+  bgStage.alpha = 0;
+
+var game = document.getElementById("game");
 
 var lineNumbers = [],  // массив номеров-подсказок линий.
     lineImages = [],   // массив изображений линий-подсказок.
@@ -32,12 +49,13 @@ var spinButton, spinHovButton, spinTachButton,                  // Кнопка 
 
 var spinClicked = false,    // Флаг клика кнопки SPIN.
     timeOfSpin = 3400,      // Время одной крутки.
-    autoplayID = [];        // Массив с запущенными автоплеями.
+    autoplayID = [],        // Массив с запущенными автоплеями.
+    autoplayIndex = 0;
 
 var   nameOfPlayer = "SomeName" + Math.random()*100,            // Имя игрока (в дальнейшем будет получаться при вводе).
-			url = "http://62.80.177.130:33333/JSON/SlotService.svc/", // URL сервера.
+			url = "http://176.105.103.83:99/JSON/SlotService.svc/",   // URL сервера.
 			sessionID,                                                // ID игровой сессии (получается при загрузке игры).
-			gameID = 0,                                               // ID игры (получается при загрузке игры).
+			gameID = 1,                                               // ID игры (получается при загрузке игры).
       linesCoords = [];                                         // Массив с координатами элементов в линиях.
 
 var rowWidth = gameStage.canvas.width/5,      // Ширина одной линии барабана.
@@ -52,13 +70,18 @@ var rowWidth = gameStage.canvas.width/5,      // Ширина одной лин�
 var winCoins,             // Это значение выигрыша.
     winText,              // Текст выигрыша.
     winRows = [],         // Победный экран.
-    numbersOfLines = [];  // Номера победных линий.
+    numbersOfLines = [],  // Номера победных линий.
+    indexes,
+    winLines = [],
+    bonusResult;
 
 	// Добавляем перерисовку всех холстов с FPS = 40.
-	createjs.Ticker.setFPS(40);
+  createjs.Ticker.timingMode = createjs.Ticker.RAF;
 	createjs.Ticker.addEventListener("tick", bgStage);
 	createjs.Ticker.addEventListener("tick", panelStage);
 	createjs.Ticker.addEventListener("tick", gameStage);
+  createjs.Ticker.addEventListener("tick", doorsStage);
+
 
   // Функция resizeCanvas(canvasID, WIDTH, percent, heightToWidth) - изменение размеров холста.
   function resizeCanvas(canvasID, WIDTH, percent, heightToWidth) {
@@ -80,6 +103,10 @@ var winCoins,             // Это значение выигрыша.
   resizeCanvas("bgCanvas", BG_WIDTH, 1, 0.5625);
   resizeCanvas("panelCanvas", PANEL_WIDTH, 1, 0.5625);
   resizeCanvas("gameCanvas", GAME_WIDTH, 0.67, 0.5625);
+  resizeCanvas("doorsCanvas", PANEL_WIDTH, 1, 0.5625);
+
+  doorsStage.alpha = 0;
+
 
   // Функция preload() - отвечает за предварительную загрузку изображений.
 	function preload(){
@@ -118,6 +145,11 @@ var winCoins,             // Это значение выигрыша.
       if(i <= 10) { // Размытой дамы на три слота у нас не будет.
         preload.loadFile("img/game/blur/" + i + "b.png");
       }
+
+    createjs.Sound.registerSound("sound/spinClick.wav", "spinClickSound");
+    createjs.Sound.registerSound("sound/click.wav", "buttonClickSound");
+    createjs.Sound.registerSound("sound/barabaniKrutyatsa.wav", "spinProcessSound");
+    createjs.Sound.registerSound("sound/barabanStop.wav", "spinEndSound");
     }
     // Загружаем выигрышные линии.
     for(j = 1; j <= 21; j++) {
@@ -153,13 +185,11 @@ var winCoins,             // Это значение выигрыша.
     // Проведем их позиционирование относительно того же верхнего угла.
     lampBottomBG.x = -20; lampBottomBG.y = 65;
     lampTopBG.x = 8; lampTopBG.y = 116;
-    // И нарисуем все это на холсте bgStage в нужном порядке наложения.
-    bgStage.addChild(mainBG, cloudsBG, mainFG, lampTopBG, lampBottomBG, fogBG);
-
     // Создаем основу панели управления.
     var panelBG = new createjs.Bitmap("img/bg/panelBG.png");
-    // И рисуем ее на холсте panelBG.
-    panelStage.addChild(panelBG);
+
+    // И нарисуем все это на холсте bgStage в нужном порядке наложения.
+    panelStage.addChild(mainBG, cloudsBG, panelBG, lampTopBG, lampBottomBG, fogBG);
 
     // Создаем задний фон для слотов.
     var gameBG = new createjs.Bitmap("img/bg/gameBG.png");
@@ -170,7 +200,7 @@ var winCoins,             // Это значение выигрыша.
   drawMainBG();
 
   // На холсте панели управления подключаем hover события мыши.
-  panelStage.enableMouseOver(10);
+  panelStage.enableMouseOver(5);
 
   // Функция drawLines() - отвечает за прорисовку и поведение линий-подсказок и номеров к ним.
   function drawLines() {
@@ -463,7 +493,7 @@ var winCoins,             // Это значение выигрыша.
         }
       });
 
-      var autoplayIndex = 0; // Индекс AUTOPLAY сессии. (нужен для его отключения).
+      // var autoplayIndex = 0; // Индекс AUTOPLAY сессии. (нужен для его отключения).
       // Ховер эффект на кнопке AUTOPLAY.
       autoplayButton.on("rollover", function(){
         autoplayHovButton.alpha = 1;
@@ -482,7 +512,7 @@ var winCoins,             // Это значение выигрыша.
         autoplayTachButton.alpha = 1;
         maxBetTachButton.alpha = 1;
         spinON();
-        autoplayID[autoplayIndex] = setInterval(spinON.bind(null), timeOfSpin + 300);
+        autoplayID[autoplayIndex] = setInterval(spinON.bind(null), timeOfSpin + 500);
       });
       // Если AUTOPLAY уже работает, то мы его отключим.
       autoplayTachButton.on("mousedown", function(){
@@ -554,6 +584,7 @@ var winCoins,             // Это значение выигрыша.
           if(+coinsValue.text === 0.20) {coinsValue.text = "0.10";}
           if(+coinsValue.text === 0.50) {coinsValue.text = "0.20";}
           if(+coinsValue.text === 1.00) {coinsValue.text = "0.50";}
+          createjs.Sound.play("buttonClickSound");
         }
         // Пересчитываем общую сумму монет.
         coinsSum.text = (+cashTotal.text/+coinsValue.text).toFixed(0);
@@ -597,6 +628,7 @@ var winCoins,             // Это значение выигрыша.
           if(+coinsValue.text === 0.05) {coinsValue.text = "0.10";}
           if(+coinsValue.text === 0.02) {coinsValue.text = "0.05";}
           if(+coinsValue.text === 0.01) {coinsValue.text = "0.02";}
+          createjs.Sound.play("buttonClickSound");
         }
         // Пересчитываем общую сумму монет.
         coinsSum.text = (+cashTotal.text/+coinsValue.text).toFixed(0);
@@ -635,6 +667,7 @@ var winCoins,             // Это значение выигрыша.
         // Проверяем условие что уровень ставки больше 1.
         if(+betValue.text > 1) {
           betValue.text = +betValue.text - 1;
+          createjs.Sound.play("buttonClickSound");
         }
         // Пересчитываем сумму ставки в монетках.
         betSum.text = betValue.text * 15;
@@ -676,6 +709,7 @@ var winCoins,             // Это значение выигрыша.
         // Проверяем что значение уровня ставки меньше 10.
         if(+betValue.text < 10) {
           betValue.text = +betValue.text + 1;
+          createjs.Sound.play("buttonClickSound");
         }
         // Пересчитываем сумму ставки в монетках.
         betSum.text = betValue.text * 15;
@@ -916,10 +950,12 @@ var winCoins,             // Это значение выигрыша.
       // Вернем массив первого экрана.
       return result;
     }
-    // Функция showFirstScreen() - отвечает за рисование первого экрана игры.
-    function showFirstScreen() {
+  }
+
+  // Функция showFirstScreen() - отвечает за рисование первого экрана игры.
+  function showFirstScreen() {
       var i;
-      for (i = 0; i < rowNumber; i++) {
+      for (i = 0; i < 5; i++) {
         // Создаем 5 новых линий
         rows[i] = getFirstRow(i);
         // Позиционируем их гозизонтально
@@ -949,7 +985,6 @@ var winCoins,             // Это значение выигрыша.
         return row;
       }
     }
-  }
 
   // Функция showNewScreen() - отвечает за отображение нового экрана и столбиков при крутке.
 	function showNewScreen() {
@@ -962,20 +997,21 @@ var winCoins,             // Это значение выигрыша.
     // Также убираем текст выигрыша.
     gameStage.removeChild(winText);
     // Создаем новые линии барабана.
-		for (var i = 0; i < rowNumber; i++) {
+		for (var i = 0; i < 5; i++) {
       // Но сначала удаляем все изображения предыдущих линий.
       gameStage.removeChild(rows[i]);
       // И выигрышных линий также.
       gameStage.removeChild(winRows[i]);
 			// Создаем 5 новых линий.
-			rows[i] = getNewRow(i);
-      // Также заготавливаем выигрышный экран.
       winRows[i] = getNewWinRow(i);
+      // Также заготавливаем выигрышный экран.
+      rows[i] = getNewRow(i);
 			// Позиционируем их гозизонтально.
 			rows[i].x = rowWidth*i;
       winRows[i].x = rowWidth*i;
 			// И добавляем в холст.
-			gameStage.addChild(rows[i], winRows[i]);
+      gameStage.addChild(rows[i]);
+      gameStage.addChild(winRows[i]);
 		}
     // Функция getNewRow(currentRow) - отвечает за создание новой линии включая по концам результаты nextScreenData и currentScreenData.
     function getNewRow(currentRow) {
@@ -1008,23 +1044,24 @@ var winCoins,             // Это значение выигрыша.
 
     // Функция getNewWinRow(currentRow) - отвечает за создание новой победной линии по результам nextScreenData.
     function getNewWinRow(currentRow) {
-      var row, img, i;
+      var winRow, winImg, j;
       // Создаем новую линию-контейнер.
-      row = new createjs.Container();
+      winRow = new createjs.Container();
       // Заполняем ее элементами
-      for ( i = 0; i < 5; i++ ) {
-        elementsMas[i] = nextScreenData[currentRow][i];
-        img = new createjs.Bitmap("img/game/win/" + elementsMas[i] + ".png");
+      for ( j = 0; j < 5; j++ ) {
+        elementsMas[j] = nextScreenData[currentRow][j];
+        winImg = new createjs.Bitmap("img/game/win/" + elementsMas[j] + ".png");
         // Рассчитываем позиции элементов с учетом выступов по одному элементу по краях
-        elementsPositions[i] = elementHeight * ( i + 1 + 3 - 60 );
+        elementsPositions[j] = elementHeight *  (j-1);
         // Позиционирование элементов
-        img.y = elementsPositions[i];
-        img.alpha = 0;
+        winImg.y = elementsPositions[j];
+        winImg.alpha = 0;
         // Добавляем их в линию
-        row.addChild(img);
+        winRow.addChild(winImg);
       }
+      winRow.y = elementsPositions[1];
       // Возвращаем линию
-      return row;
+      return winRow;
     }
 	}
 
@@ -1041,10 +1078,12 @@ var winCoins,             // Это значение выигрыша.
 						dataType: 'JSONP',
 						type: 'GET',
 						success: function(rollData) {
+              console.log(rollData.Result);
               // Разбираем результаты.
-              var indexes = rollData.Result.Indexes;
-							var winLines = rollData.Result.LinesResult;
+              indexes = rollData.Result.Indexes;
+							winLines = rollData.Result.LinesResult;
               winCoins = rollData.Result.TotalWin;
+              bonusResult = rollData.Result.BonusResults;
 
               // Обнуляем массив с выпавшими линиями.
               numbersOfLines = [];
@@ -1060,6 +1099,9 @@ var winCoins,             // Это значение выигрыша.
 
 							// Отображаем необходимые линии.
 							showNewScreen();
+
+              createjs.Sound.play("spinClickSound");
+              createjs.Sound.play("spinProcessSound");
 
               // Прокручиваем линии до нужного нам экрана.
               animateSpin();
@@ -1087,7 +1129,11 @@ var winCoins,             // Это значение выигрыша.
       for(i = 0; i < rows.length; i++) {
         time += 400;
         createjs.Tween.get(rows[i])
-          .to({ y: -elementsPositions[1]}, time , createjs.Ease.getBackInOut(0.5));
+          .to({ y: -elementsPositions[1]}, time , createjs.Ease.getBackInOut(0.5))
+          .call(handleComplete);
+      }
+      function handleComplete() {
+        createjs.Sound.play("spinEndSound");
       }
     }
 
@@ -1105,10 +1151,20 @@ var winCoins,             // Это значение выигрыша.
 
     // Функция getNextScreenData() - отвечает за получение результатов следующего экрана.
     function getNextScreenData() {
-      var i, j;
+      var i, j, counter = 0;
       for (i = 0; i < 5; i++){
         nextScreenData[i] = [];
         for (j = 0; j < 5; j++){
+          if ( (+indexes[i] === 0)&&(j === 0) ) {
+            console.log("Здесь есть ошибка", indexes[i]);
+            nextScreenData[i].push(wheels[i][699]);
+          } else if(+indexes[i] > 696){
+            console.log("Здесь есть ошибка", indexes[i]);
+            if(wheels[i][indexes[i] + j - 1] === undefined) {
+              nextScreenData[i].push(wheels[i][counter]);
+              counter++;
+            }
+          }
           nextScreenData[i].push(wheels[i][indexes[i] + j - 1]);
         }
       }
@@ -1130,7 +1186,15 @@ var winCoins,             // Это значение выигрыша.
     // Определяем выигрыш в деньгах.
     winTotal.text = +(winCoins*parseFloat(coinsValue.text)).toFixed(2);
     // И общую сумму депозита.
-    cashTotal.text = (+parseFloat(cashTotal.text) + someVar).toFixed(2);
+    cashTotal.text = (+parseFloat(cashTotal.text) + +winTotal.text).toFixed(2);
+
+    if(bonusResult[0] !== undefined) {
+      doorsLevel(1);
+      autoplayTachButton.alpha = 0;
+      maxBetTachButton.alpha = 0;
+      clearInterval(autoplayID[autoplayIndex]);
+      autoplayIndex++;
+    }
 
     // Проходимся по массиву победных линий.
     for(var i = 0; i < numbersOfLines.length; i++) {
@@ -1156,7 +1220,7 @@ var winCoins,             // Это значение выигрыша.
         }
       } else { // Если выпала нормальная линия.
         // То мы показываем выигрышную линию.
-        showWinLine(numberOfCurrentLine);
+        showWinLine(numberOfCurrentLine - 1);
         // И подсвечиваем нужный номер линии.
         lineNumbers[numberOfCurrentLine-1].shadow = new createjs.Shadow("#FFFFFF", 1, 1, 2);
 
@@ -1168,6 +1232,7 @@ var winCoins,             // Это значение выигрыша.
           currentElement = winRows[currentRowNumber].children[currentElementNumber];
           // Отображаем нужный элемент.
           currentElement.alpha = 1;
+
           // И задаем ему анимацию.
           createjs.Tween.get(currentElement, { loop: true })
           .to({ alpha: 1, scaleX: 1.02, scaleY: 1.02, x: -3}, 500)
@@ -1210,479 +1275,664 @@ var winCoins,             // Это значение выигрыша.
     }
     // Функция showWinLine(numberOfLine) - отвечает за показ нужных победных линий.
     function showWinLine(numberOfLine) {
-      lineWinImages[j].alpha = 1;
+      lineWinImages[numberOfLine].alpha = 1;
     }
 
   }
 
-}); // Конец функции Init()
+  function doorsLevel(levelNumber) {
+
+    var door1, door2, door3, door4, door5,
+    multiply, bonusNumber, winBonus,
+    winIMG, failIMG, win_OR_fail,
+    bgIMG, firstDarkness,
+    newLevel, counter;
+
+    // Очистим экраны.
+    counter = 0;
+
+    $("#doorsCanvas").addClass("first");
+    gameStage.alpha = 0;
+    panelStage.alpha = 0;
+    bgStage.alpha = 0;
+    doorsStage.alpha = 1;
+    doorsStage.removeAllChildren();
+
+    // Создаем и запускаем начальную темноту.
+    firstDarkness = new createjs.Shape();
+    firstDarkness.graphics.beginFill("#000").drawRect(0, 0, 1920, 1080);
+    createjs.Tween.get(firstDarkness)
+    .to({alpha: 0}, 1000);
+
+    // Здесь мы разбираем массив бонусов.
+    // var bonusString = bonusResult[0].BonusSteps;
+    // var bonusArray = bonusString.split(",");
+    // bonusArray = bonusArray.map(function(bonus){
+    //   return parseInt(bonus);
+    // });
+    // console.log(bonusArray);
+
+    bgIMG = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/bg.png");
+    // Изображение победы.
+    winIMG = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/win.png");
+    // Изображение поражения.
+    failIMG = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/fail.png");
+
+    // Если есть бонус, то загружаем победный экран, и увеличиваем уровень.
+    // if (bonusArray[levelNumber - 1]) {doorsStage.addChild(winIMG); newLevel = levelNumber + 1;}
+    // else {doorsStage.addChild(failIMG)}
+
+    // Создаем бонусную надпись.
+    // winBonus = new createjs.Container();
+    // winBonus.scaleX = 0.7; winBonus.scaleY = 0.7;
+    // winBonus.alpha = 0.2;
+    // winBonus.x = 732; winBonus.y = 440;
+    // multiply = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/x.png");
+    // bonusNumber = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/" + bonusArray[levelNumber - 1] + ".png");;
+    // bonusNumber.x = 200; bonusNumber.y = -75;
+    // winBonus.addChild(multiply, bonusNumber);
 
 
+      // Добавим двери.
+      dark1 = new createjs.Shape();
+      dark1.graphics.beginFill("#000").drawRect(420, 350, 200, 525);
+      dark2 = new createjs.Shape();
+      dark2.graphics.beginFill("#000").drawRect(635, 360, 200, 480);
+      dark3 = new createjs.Shape();
+      dark3.graphics.beginFill("#000").drawRect(845, 380, 205, 468);
+      dark4 = new createjs.Shape();
+      dark4.graphics.beginFill("#000").drawRect(1070, 370, 223, 480);
+      dark5 = new createjs.Shape();
+      dark5.graphics.beginFill("#000").drawRect(1295, 355, 201, 525);
+
+      door1 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door1.png");
+      door1.x = 420; door1.y = 350;
+      door2 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door2.png");
+      door2.x = 635; door2.y = 370;
+      door3 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door3.png");
+      door3.x = 845; door3.y = 380;
+      door4 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door4.png");
+      door4.x = 1070; door4.y = 370;
+      door5 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door5.png");
+      door5.x = 1295; door5.y = 355;
+
+      door1.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(this)
+          .to({ y: this.y - 475}, 600);
+          createjs.Tween.get(dark1)
+          .to({alpha: 0}, 600);
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 1500);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      door2.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(this)
+          .to({ y: this.y - 475}, 600);
+          createjs.Tween.get(dark2)
+          .to({alpha: 0}, 600);
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 1500);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      door3.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(this)
+          .to({ y: this.y - 475}, 600);
+          createjs.Tween.get(dark3)
+          .to({alpha: 0}, 600);
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 1500);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      door4.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(this)
+          .to({ y: this.y - 475}, 600);
+          createjs.Tween.get(dark4)
+          .to({alpha: 0}, 600);
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 1500);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      door5.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(this)
+          .to({ y: this.y - 475}, 600);
+          createjs.Tween.get(dark5)
+          .to({alpha: 0}, 600);
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 3000, Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+
+    if(levelNumber === 1) {
+      doorsStage.addChild(dark1, door1, dark2, door2, dark3, door3, dark4, door4, dark5, door5, bgIMG, firstDarkness);
+    }
 
 
-function doorsLevel(levelNumber) {
+      var room2Data = {
+        images: ["img/bonuses/room2/doors2.png"],
+        frames: {width: 200, height: 525},
+        framerate: 24,
+        animations: {
+          door1open: [0, 9, "stop"],
+          door2open: [1, 9, "stop"],
+          door3open: [2, 9, "stop"],
+          door4open: [3, 9, "stop"],
+          door5open: [4, 9, "stop"],
+          stop: 9
+        }
+      };
 
-  var door1, door2, door3, door4, door5,
-  multiply, bonusNumber, winBonus,
-  winIMG, failIMG, win_OR_fail,
-  bgIMG, firstDarkness,
-  newLevel, counter;
+      var room2SpriteSheet = new createjs.SpriteSheet(room2Data);
+      var room2 = {};
+      room2.door1open = new createjs.Sprite(room2SpriteSheet, "door1open");
+      room2.door1open.x = 413; room2.door1open.y = 351; room2.door1open.stop();
+      room2.door1open.scaleX = 0.95; room2.door1open.scaleY = 0.97; room2.door1open.skewX = 0.5; room2.door1open.rotation = -1;
+      room2.door2open = new createjs.Sprite(room2SpriteSheet, "door2open");
+      room2.door2open.x = 636; room2.door2open.y = 367; room2.door2open.stop();
+      room2.door2open.scaleX = 0.94; room2.door2open.scaleY = 0.91;
+      room2.door3open = new createjs.Sprite(room2SpriteSheet, "door3open");
+      room2.door3open.x = 859; room2.door3open.y = 370; room2.door3open.stop();
+      room2.door3open.scaleX = 0.94; room2.door3open.scaleY = 0.9;
+      room2.door4open = new createjs.Sprite(room2SpriteSheet, "door4open");
+      room2.door4open.x = 1077; room2.door4open.y = 361; room2.door4open.stop();
+      room2.door4open.scaleX = 0.97; room2.door4open.scaleY = 0.93;
+      room2.door5open = new createjs.Sprite(room2SpriteSheet, "door5open");
+      room2.door5open.x = 1291; room2.door5open.y = 335; room2.door5open.stop();
+      room2.door5open.scaleX = 1.04; room2.door5open.scaleY = 1.02; room2.door5open.skewX = -0.5; room2.door5open.rotation = 1;
 
-  // Очистим экраны.
-  counter = 0;
-  bgStage.removeAllChildren();
-  panelStage.removeAllChildren();
-  gameStage.removeAllChildren();
+      room2.door1open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark1)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      room2.door2open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark2)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      room2.door3open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark3)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      room2.door4open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark4)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      room2.door5open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark5)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
 
-  firstDarkness = new createjs.Shape();
-  firstDarkness.graphics.beginFill("#000").drawRect(0, 0, 1920, 1080);
-  createjs.Tween.get(firstDarkness)
-  .to({alpha: 0}, 1000);
+    if (levelNumber === 2) {
+      doorsStage.addChild(dark1, room2.door1open, dark2, room2.door2open, dark3, room2.door3open, dark4, room2.door4open, dark5, room2.door5open, bgIMG, firstDarkness);
+    }
 
 
+      var room3Data = {
+        images: ["img/bonuses/room3/doors2.png"],
+        frames: {width: 200, height: 525},
+        framerate: 24,
+        animations: {
+          door1open: [0, 9, "stop"],
+          door2open: [1, 9, "stop"],
+          door3open: [2, 9, "stop"],
+          door4open: [3, 9, "stop"],
+          door5open: [4, 9, "stop"],
+          stop: 9
+        }
+      };
 
-  // Изображение победы.
-  winIMG = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/win.png");
-  // Изображение поражения.
-  failIMG = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/fail.png");
+      var room3SpriteSheet = new createjs.SpriteSheet(room3Data);
+      var room3 = {};
+      room3.door1open = new createjs.Sprite(room3SpriteSheet, "door1open");
+      room3.door1open.x = 413; room3.door1open.y = 351; room3.door1open.stop();
+      room3.door1open.scaleX = 0.95; room3.door1open.scaleY = 0.97; room3.door1open.skewX = 0.5; room3.door1open.rotation = -1;
+      room3.door2open = new createjs.Sprite(room3SpriteSheet, "door2open");
+      room3.door2open.x = 638; room3.door2open.y = 367; room3.door2open.stop();
+      room3.door2open.scaleX = 0.93; room3.door2open.scaleY = 0.91;
+      room3.door3open = new createjs.Sprite(room3SpriteSheet, "door3open");
+      room3.door3open.x = 859; room3.door3open.y = 370; room3.door3open.stop();
+      room3.door3open.scaleX = 0.93; room3.door3open.scaleY = 0.9;
+      room3.door4open = new createjs.Sprite(room3SpriteSheet, "door4open");
+      room3.door4open.x = 1080; room3.door4open.y = 361; room3.door4open.stop();
+      room3.door4open.scaleX = 0.96; room3.door4open.scaleY = 0.93;
+      room3.door5open = new createjs.Sprite(room3SpriteSheet, "door5open");
+      room3.door5open.x = 1293; room3.door5open.y = 335; room3.door5open.stop();
+      room3.door5open.scaleX = 1.04; room3.door5open.scaleY = 1.02; room3.door5open.skewX = -0.5; room3.door5open.rotation = 1;
 
-  win_OR_fail = Math.random();
-  if (win_OR_fail >= 0.5) {panelStage.addChild(winIMG); newLevel = levelNumber + 1;}
-  else {panelStage.addChild(failIMG)}
+      room3.door1open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark1)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      room3.door2open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark2)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      room3.door3open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark3)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      room3.door4open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark4)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      room3.door5open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark5)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
 
-  winBonus = new createjs.Container();
-  winBonus.scaleX = 0.7; winBonus.scaleY = 0.7;
-  winBonus.alpha = 0.2;
-  winBonus.x = 732; winBonus.y = 440;
-  multiply = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/x.png");
-  bonusNumber = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/2.png");
-  if (win_OR_fail > 0.4) bonusNumber = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/2.png");
-  if (win_OR_fail > 0.7) bonusNumber = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/3.png");
-  if (win_OR_fail > 0.9) bonusNumber = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/4.png");
-  if (win_OR_fail > 0.95) bonusNumber = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/5.png");
-  bonusNumber.x = 200; bonusNumber.y = -75;
-  winBonus.addChild(multiply, bonusNumber);
+    if(levelNumber === 3) {
+      doorsStage.addChild(dark1, room3.door1open, dark2, room3.door2open, dark3, room3.door3open, dark4, room3.door4open, dark5, room3.door5open, bgIMG, firstDarkness);
+    }
 
-  // Добавим двери.
-  dark1 = new createjs.Shape();
-  dark1.graphics.beginFill("#000").drawRect(420, 350, 200, 525);
-  dark2 = new createjs.Shape();
-  dark2.graphics.beginFill("#000").drawRect(635, 360, 200, 480);
-  dark3 = new createjs.Shape();
-  dark3.graphics.beginFill("#000").drawRect(845, 380, 205, 468);
-  dark4 = new createjs.Shape();
-  dark4.graphics.beginFill("#000").drawRect(1070, 370, 223, 480);
-  dark5 = new createjs.Shape();
-  dark5.graphics.beginFill("#000").drawRect(1295, 355, 201, 525);
 
-  door1 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door1.png");
-  door1.x = 420; door1.y = 350;
-  door2 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door2.png");
-  door2.x = 635; door2.y = 370;
-  door3 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door3.png");
-  door3.x = 845; door3.y = 380;
-  door4 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door4.png");
-  door4.x = 1070; door4.y = 370;
-  door5 = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/door5.png");
-  door5.x = 1295; door5.y = 355;
+      var room4Data = {
+        images: ["img/bonuses/room4/doors2.png"],
+        frames: {width: 200, height: 525},
+        framerate: 24,
+        animations: {
+          door1open: [0, 9, "stop"],
+          door2open: [1, 9, "stop"],
+          door3open: [2, 9, "stop"],
+          door4open: [3, 9, "stop"],
+          door5open: [4, 9, "stop"],
+          stop: 9
+        }
+      };
 
-  door1.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(this)
-      .to({ y: this.y - 475}, 600);
-      createjs.Tween.get(dark1)
-      .to({alpha: 0}, 600);
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 1500);
+      var room4SpriteSheet = new createjs.SpriteSheet(room4Data);
+      var room4 = {};
+      room4.door1open = new createjs.Sprite(room4SpriteSheet, "door1open");
+      room4.door1open.x = 413; room4.door1open.y = 351; room4.door1open.stop();
+      room4.door1open.scaleX = 0.95; room4.door1open.scaleY = 0.97; room4.door1open.skewX = 0.5; room4.door1open.rotation = -1;
+      room4.door2open = new createjs.Sprite(room4SpriteSheet, "door2open");
+      room4.door2open.x = 638; room4.door2open.y = 367; room4.door2open.stop();
+      room4.door2open.scaleX = 0.93; room4.door2open.scaleY = 0.91;
+      room4.door3open = new createjs.Sprite(room4SpriteSheet, "door3open");
+      room4.door3open.x = 859; room4.door3open.y = 370; room4.door3open.stop();
+      room4.door3open.scaleX = 0.93; room4.door3open.scaleY = 0.9;
+      room4.door4open = new createjs.Sprite(room4SpriteSheet, "door4open");
+      room4.door4open.x = 1080; room4.door4open.y = 361; room4.door4open.stop();
+      room4.door4open.scaleX = 0.96; room4.door4open.scaleY = 0.93;
+      room4.door5open = new createjs.Sprite(room4SpriteSheet, "door5open");
+      room4.door5open.x = 1293; room4.door5open.y = 335; room4.door5open.stop();
+      room4.door5open.scaleX = 1.04; room4.door5open.scaleY = 1.02; room4.door5open.skewX = -0.5; room4.door5open.rotation = 1;
+
+      room4.door1open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark1)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      room4.door2open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark2)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      room4.door3open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark3)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+      });
+      room4.door4open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark4)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          } else {
+            setTimeout(returnToMainScreen.bind(null), 1500);
+          }
+        }
+
+      });
+      room4.door5open.on("click", function(){
+        if (counter === 0) {
+          createjs.Tween.get(dark5)
+          .to({alpha: 0}, 600);
+          this.play();
+          counter++;
+          if (newLevel) {
+            doorsStage.addChild(winBonus);
+            createjs.Tween.get(winBonus)
+            .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+            setTimeout(doorsLevel.bind(null, newLevel), 2000);
+          }
+        }
+      });
+
+    if (levelNumber === 4) {
+      doorsStage.addChild(dark1, room4.door1open, dark2, room4.door2open, dark3, room4.door3open, dark4, room4.door4open, dark5, room4.door5open, bgIMG, firstDarkness);
+    }
+
+    var room5 = {};
+
+    var chest1Data = {
+      images: ["img/bonuses/room5/chest1.png"],
+      frames: {width: 193, height: 190},
+      framerate: 12,
+      animations: {
+        open: [0, 5, "stop"],
+        stop: 5
       }
-    }
-  });
-  door2.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(this)
-      .to({ y: this.y - 475}, 600);
-      createjs.Tween.get(dark2)
-      .to({alpha: 0}, 600);
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 1500);
+    };
+    var chest1SpriteSheet = new createjs.SpriteSheet(chest1Data);
+    room5.chest1 = new createjs.Sprite(chest1SpriteSheet, "open");
+    room5.chest1.x = 435; room5.chest1.y = 590; room5.chest1.stop();
+    room5.chest1.scaleX = 0.8; room5.chest1.scaleY = 0.8;
+
+    room5.chest1.on("click", function(){
+      if (counter === 0) {
+        this.play();
+        room5.muha.play();
+        counter++;
       }
-    }
-  });
-  door3.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(this)
-      .to({ y: this.y - 475}, 600);
-      createjs.Tween.get(dark3)
-      .to({alpha: 0}, 600);
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 1500);
+    });
+
+    var chest2Data = {
+      images: ["img/bonuses/room5/chest2.png"],
+      frames: {width: 168, height: 182},
+      framerate: 12,
+      animations: {
+        open: [0, 5, "stop"],
+        stop: 5
       }
-    }
-  });
-  door4.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(this)
-      .to({ y: this.y - 475}, 600);
-      createjs.Tween.get(dark4)
-      .to({alpha: 0}, 600);
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 1500);
+    };
+    var chest2SpriteSheet = new createjs.SpriteSheet(chest2Data);
+    room5.chest2 = new createjs.Sprite(chest2SpriteSheet, "open");
+    room5.chest2.x = 670; room5.chest2.y = 595; room5.chest2.stop();
+    room5.chest2.scaleX = 0.8; room5.chest2.scaleY = 0.8;
+
+    room5.chest2.on("click", function(){
+      if (counter === 0) {
+        this.play();
+        counter++;
       }
-    }
-  });
-  door5.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(this)
-      .to({ y: this.y - 475}, 600);
-      createjs.Tween.get(dark5)
-      .to({alpha: 0}, 600);
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 3000, Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
+    });
+
+    var chest3Data = {
+      images: ["img/bonuses/room5/chest3.png"],
+      frames: {width: 159, height: 183},
+      framerate: 12,
+      animations: {
+        open: [0, 5, "stop"],
+        stop: 5
       }
-    }
-  });
+    };
+    var chest3SpriteSheet = new createjs.SpriteSheet(chest3Data);
+    room5.chest3 = new createjs.Sprite(chest3SpriteSheet, "open");
+    room5.chest3.x = 890; room5.chest3.y = 595; room5.chest3.stop();
+    room5.chest3.scaleX = 0.8; room5.chest3.scaleY = 0.8;
+
+    room5.chest3.on("click", function(){
+      if (counter === 0) {
+        this.play();
+        counter++;
+      }
+    });
+
+    var chest4Data = {
+      images: ["img/bonuses/room5/chest4.png"],
+      frames: {width: 168, height: 182},
+      framerate: 12,
+      animations: {
+        open: [0, 5, "stop"],
+        stop: 5
+      }
+    };
+    var chest4SpriteSheet = new createjs.SpriteSheet(chest4Data);
+    room5.chest4 = new createjs.Sprite(chest4SpriteSheet, "open");
+    room5.chest4.x = 1100; room5.chest4.y = 595; room5.chest4.stop();
+    room5.chest4.scaleX = 0.8; room5.chest4.scaleY = 0.8;
+
+    room5.chest4.on("click", function(){
+      if (counter === 0) {
+        this.play();
+        counter++;
+      }
+    });
+
+    var muhaData = {
+      images: ["img/bonuses/room5/muha.png"],
+      frames: {width: 134, height: 416},
+      framerate: 24,
+      animations: {
+        open: [0, 29, "stop"],
+        stop: 29
+      }
+    };
+    var muhaSpriteSheet = new createjs.SpriteSheet(muhaData);
+    room5.muha = new createjs.Sprite(muhaSpriteSheet, "open");
+    room5.muha.x = 450; room5.muha.y = 300; room5.muha.stop();
 
 
-  var room2Data = {
-    images: ["img/bonuses/room2/doors2.png"],
-    frames: {width: 200, height: 525},
-    framerate: 24,
-    animations: {
-      door1open: [0, 9, "stop"],
-      door2open: [1, 9, "stop"],
-      door3open: [2, 9, "stop"],
-      door4open: [3, 9, "stop"],
-      door5open: [4, 9, "stop"],
-      stop: 9
-    }
-  };
 
-  var room2SpriteSheet = new createjs.SpriteSheet(room2Data);
-  var room2 = {};
-  room2.door1open = new createjs.Sprite(room2SpriteSheet, "door1open");
-  room2.door1open.x = 413; room2.door1open.y = 351; room2.door1open.stop();
-  room2.door1open.scaleX = 0.95; room2.door1open.scaleY = 0.97; room2.door1open.skewX = 0.5; room2.door1open.rotation = -1;
-  room2.door2open = new createjs.Sprite(room2SpriteSheet, "door2open");
-  room2.door2open.x = 636; room2.door2open.y = 367; room2.door2open.stop();
-  room2.door2open.scaleX = 0.94; room2.door2open.scaleY = 0.91;
-  room2.door3open = new createjs.Sprite(room2SpriteSheet, "door3open");
-  room2.door3open.x = 859; room2.door3open.y = 370; room2.door3open.stop();
-  room2.door3open.scaleX = 0.94; room2.door3open.scaleY = 0.9;
-  room2.door4open = new createjs.Sprite(room2SpriteSheet, "door4open");
-  room2.door4open.x = 1077; room2.door4open.y = 361; room2.door4open.stop();
-  room2.door4open.scaleX = 0.97; room2.door4open.scaleY = 0.93;
-  room2.door5open = new createjs.Sprite(room2SpriteSheet, "door5open");
-  room2.door5open.x = 1291; room2.door5open.y = 335; room2.door5open.stop();
-  room2.door5open.scaleX = 1.04; room2.door5open.scaleY = 1.02; room2.door5open.skewX = -0.5; room2.door5open.rotation = 1;
+    if(levelNumber === 5) {
+      doorsStage.addChild(bgIMG, room5.chest1, room5.chest2, room5.chest3, room5.chest4, room5.muha, firstDarkness);
+      bgIMG.on("click", function(){
+        setTimeout(returnToMainScreen.bind(null), 1500);
+      });
+    }
 
-  room2.door1open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark1)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
+    function returnToMainScreen() {
+      $("#doorsCanvas").removeClass("first");
+      doorsStage.removeAllChildren();
+      doorsStage.alpha = 0;
+      gameStage.alpha = 1;
+      panelStage.alpha = 1;
+      // bgStage.alpha = 1;
     }
-  });
-  room2.door2open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark2)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
-  room2.door3open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark3)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
-  room2.door4open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark4)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
-  room2.door5open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark5)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
 
-
-  var room3Data = {
-    images: ["img/bonuses/room3/doors2.png"],
-    frames: {width: 200, height: 525},
-    framerate: 24,
-    animations: {
-      door1open: [0, 9, "stop"],
-      door2open: [1, 9, "stop"],
-      door3open: [2, 9, "stop"],
-      door4open: [3, 9, "stop"],
-      door5open: [4, 9, "stop"],
-      stop: 9
-    }
-  };
-
-  var room3SpriteSheet = new createjs.SpriteSheet(room3Data);
-  var room3 = {};
-  room3.door1open = new createjs.Sprite(room3SpriteSheet, "door1open");
-  room3.door1open.x = 413; room3.door1open.y = 351; room3.door1open.stop();
-  room3.door1open.scaleX = 0.95; room3.door1open.scaleY = 0.97; room3.door1open.skewX = 0.5; room3.door1open.rotation = -1;
-  room3.door2open = new createjs.Sprite(room3SpriteSheet, "door2open");
-  room3.door2open.x = 638; room3.door2open.y = 367; room3.door2open.stop();
-  room3.door2open.scaleX = 0.93; room3.door2open.scaleY = 0.91;
-  room3.door3open = new createjs.Sprite(room3SpriteSheet, "door3open");
-  room3.door3open.x = 859; room3.door3open.y = 370; room3.door3open.stop();
-  room3.door3open.scaleX = 0.93; room3.door3open.scaleY = 0.9;
-  room3.door4open = new createjs.Sprite(room3SpriteSheet, "door4open");
-  room3.door4open.x = 1080; room3.door4open.y = 361; room3.door4open.stop();
-  room3.door4open.scaleX = 0.96; room3.door4open.scaleY = 0.93;
-  room3.door5open = new createjs.Sprite(room3SpriteSheet, "door5open");
-  room3.door5open.x = 1293; room3.door5open.y = 335; room3.door5open.stop();
-  room3.door5open.scaleX = 1.04; room3.door5open.scaleY = 1.02; room3.door5open.skewX = -0.5; room3.door5open.rotation = 1;
-
-  room3.door1open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark1)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
-  room3.door2open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark2)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
-  room3.door3open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark3)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
-  room3.door4open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark4)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
-  room3.door5open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark5)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
-
-
-  var room4Data = {
-    images: ["img/bonuses/room4/doors2.png"],
-    frames: {width: 200, height: 525},
-    framerate: 24,
-    animations: {
-      door1open: [0, 9, "stop"],
-      door2open: [1, 9, "stop"],
-      door3open: [2, 9, "stop"],
-      door4open: [3, 9, "stop"],
-      door5open: [4, 9, "stop"],
-      stop: 9
-    }
-  };
-
-  var room4SpriteSheet = new createjs.SpriteSheet(room4Data);
-  var room4 = {};
-  room4.door1open = new createjs.Sprite(room4SpriteSheet, "door1open");
-  room4.door1open.x = 413; room4.door1open.y = 351; room4.door1open.stop();
-  room4.door1open.scaleX = 0.95; room4.door1open.scaleY = 0.97; room4.door1open.skewX = 0.5; room4.door1open.rotation = -1;
-  room4.door2open = new createjs.Sprite(room4SpriteSheet, "door2open");
-  room4.door2open.x = 638; room4.door2open.y = 367; room4.door2open.stop();
-  room4.door2open.scaleX = 0.93; room4.door2open.scaleY = 0.91;
-  room4.door3open = new createjs.Sprite(room4SpriteSheet, "door3open");
-  room4.door3open.x = 859; room4.door3open.y = 370; room4.door3open.stop();
-  room4.door3open.scaleX = 0.93; room4.door3open.scaleY = 0.9;
-  room4.door4open = new createjs.Sprite(room4SpriteSheet, "door4open");
-  room4.door4open.x = 1080; room4.door4open.y = 361; room4.door4open.stop();
-  room4.door4open.scaleX = 0.96; room4.door4open.scaleY = 0.93;
-  room4.door5open = new createjs.Sprite(room4SpriteSheet, "door5open");
-  room4.door5open.x = 1293; room4.door5open.y = 335; room4.door5open.stop();
-  room4.door5open.scaleX = 1.04; room4.door5open.scaleY = 1.02; room4.door5open.skewX = -0.5; room4.door5open.rotation = 1;
-
-  room4.door1open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark1)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
-  room4.door2open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark2)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
-  room4.door3open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark3)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
-  room4.door4open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark4)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
-  room4.door5open.on("click", function(){
-    if (counter === 0) {
-      createjs.Tween.get(dark5)
-      .to({alpha: 0}, 600);
-      this.play();
-      counter++;
-      if (newLevel) {
-        panelStage.addChild(winBonus);
-        createjs.Tween.get(winBonus)
-        .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
-        setTimeout(doorsLevel.bind(null, newLevel), 2000);
-      }
-    }
-  });
-
-  // Загрузим задний вид.
-  bgIMG = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/bg.png");
-  if(levelNumber === 1) {panelStage.addChild(dark1, door1, dark2, door2, dark3, door3, dark4, door4, dark5, door5, bgIMG, firstDarkness);}
-  if(levelNumber === 2) {panelStage.addChild(dark1, room2.door1open, dark2, room2.door2open, dark3, room2.door3open, dark4, room2.door4open, dark5, room2.door5open, bgIMG, firstDarkness);}
-  if(levelNumber === 3) {panelStage.addChild(dark1, room3.door1open, dark2, room3.door2open, dark3, room3.door3open, dark4, room3.door4open, dark5, room3.door5open, bgIMG, firstDarkness);}
-  if(levelNumber === 4) {panelStage.addChild(dark1, room4.door1open, dark2, room4.door2open, dark3, room4.door3open, dark4, room4.door4open, dark5, room4.door5open, bgIMG, firstDarkness);}
-  if(levelNumber === 5) {panelStage.addChild(bgIMG, firstDarkness);
   }
-}
+
+
+
+  $("#withoutSound").click(function(){
+    doorsLevel(5);
+    if(createjs.Sound.muted) {
+      createjs.Sound.muted = false;
+      $(this)[0].innerHTML = "Выключить звук!!!";
+    } else {
+      createjs.Sound.muted = true;
+      $(this)[0].innerHTML = "Включить звук!!!";
+    }
+  });
+
+} // Конец функции Init()
 
 
 function freeSpins() {

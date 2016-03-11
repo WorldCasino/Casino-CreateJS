@@ -6,7 +6,11 @@
 
 	<meta charset="utf-8">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<!-- <meta name="viewport" content="width=device-width, initial-scale=1"> -->
+
+	<meta name="viewport" content="user-scalable=1.0,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="format-detection" content="telephone=no">
 
 	<title>CreateJS</title>
 
@@ -17,19 +21,42 @@
 
 	<link rel="stylesheet" href="main.css">
 
+	<script src="https://cdnjs.cloudflare.com/ajax/libs/device.js/0.2.7/device.min.js"></script>
+
 	<style>
-		body {
-			text-align: center;
+		body, html {
+			background-color: #000;
 		}
 		#game {
 			position: relative;
+			margin: 0 auto;
 			width: 80%;
-			margin: 30px auto 0 auto;
+		}
+		@media only screen
+		  and (min-width: 320px)
+		  and (max-width: 667px) {
+			#game {
+				background-color: #000;
+				width: 100%;
+				height: 100%;
+			}
+			#game #gameCanvas {
+				top: 11.58%;
+				left: 29.55%;
+			}
+		}
+		#game:-webkit-full-screen {
+			width: 100%;
+			height: 100%;
+		}
+		#game:-webkit-full-screen #gameCanvas {
+			top: 11.58%;
+			left: 29.55%;
 		}
 		#gameCanvas {
 			position: absolute;
 			z-index: 10;
-			margin-top: 6.45%;
+			top: 11%;
 			left: 29.18%;
 			display: block;
 			box-sizing: border-box;
@@ -37,40 +64,48 @@
 		}
 		#panelCanvas {
 			position: absolute;
+			top: 0;
+			left: 0;
+			display: block;
+			box-sizing: border-box;
 			z-index: 15;
+			max-width: 1920;
+		}
+		#doorsCanvas {
+			position: absolute;
 			top: 0;
 			left: 0;
 			display: block;
 			box-sizing: border-box;
 			max-width: 1920;
+		}
+		#doorsCanvas.first {
+			z-index: 20;
 		}
 		#bgCanvas {
-			position: absolute;
-			z-index: 5;
-			top: 0;
-			left: 0;
+			position: relative;
 			display: block;
 			box-sizing: border-box;
+			z-index: 5;
 			max-width: 1920;
 			/*border: 1px solid #222;*/
-		}
-		#spinButton {
-			padding: 10px 30px;
 		}
 	</style>
 
 </head>
 
-<body>
+<body style="text-align: center;">
 
-	<!-- <button id="spinButton">Spin</button> -->
 	<div id="game">
 		<canvas id="bgCanvas" width="1920" height="1080"></canvas>
 		<canvas id="panelCanvas" width="1920" height="1080"></canvas>
 		<canvas id="gameCanvas" width="1280" height="720"></canvas>
+		<canvas id="doorsCanvas" width="1920" height="1080"></canvas>
 	</div>
-	<button onclick="doorsLevel(1);" style="display: block;">Хочу "ДВЕРИ"!!!</button>
-	<button onclick="freeSpins();" style="display: block; margin-top: 20px">Хочу "FREE"!!!</button>
+	<!-- <button onclick="doorsLevel(1);" style="margin-top: 20px">Хочу "ДВЕРИ"!!!</button>
+	<button onclick="freeSpins();" style="margin-top: 20px; margin-left: 20px">Хочу "FREE"!!!</button> -->
+	<button id="withoutSound">Выключить звук</button>
+	<button onclick="launchFullScreen(game);" style="margin-top: 20px; margin-left: 20px">FullScreen</button>
 
 	<!-- rigger -->
 		<!-- To include some template use //= assets/templates/<name>.html -->
@@ -86,6 +121,7 @@
 	<script src="https://code.createjs.com/easeljs-0.8.2.min.js"></script>
 	<script src="https://code.createjs.com/tweenjs-0.6.2.min.js"></script>
 	<script src="https://code.createjs.com/preloadjs-0.6.2.min.js"></script>
+	<script src="https://code.createjs.com/soundjs-0.6.2.min.js"></script>
 	<script src="game.js"></script>
 
 </body>
