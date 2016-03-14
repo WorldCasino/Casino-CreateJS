@@ -25,6 +25,9 @@ $(document).ready(init);
 
 function init(){
 
+  gameStage.x = 562;
+  gameStage.y = 126;
+  panelStage.addChild(gameStage);
   // panelStage.alpha = 0;
   bgStage.alpha = 0;
 
@@ -55,7 +58,7 @@ var spinClicked = false,    // Флаг клика кнопки SPIN.
 var   nameOfPlayer = "SomeName" + Math.random()*100,            // Имя игрока (в дальнейшем будет получаться при вводе).
 			url = "http://176.105.103.83:99/JSON/SlotService.svc/",   // URL сервера.
 			sessionID,                                                // ID игровой сессии (получается при загрузке игры).
-			gameID = 1,                                               // ID игры (получается при загрузке игры).
+			gameID = 0,                                               // ID игры (получается при загрузке игры).
       linesCoords = [];                                         // Массив с координатами элементов в линиях.
 
 var rowWidth = gameStage.canvas.width/5,      // Ширина одной линии барабана.
@@ -1152,20 +1155,27 @@ var winCoins,             // Это значение выигрыша.
     // Функция getNextScreenData() - отвечает за получение результатов следующего экрана.
     function getNextScreenData() {
       var i, j, counter = 0;
-      for (i = 0; i < 5; i++){
+      for (i = 0; i < 5; i++) {
         nextScreenData[i] = [];
-        for (j = 0; j < 5; j++){
+        for (j = 0; j < 5; j++) {
+          // Если первый индекс равен 0.
           if ( (+indexes[i] === 0)&&(j === 0) ) {
-            console.log("Здесь есть ошибка", indexes[i]);
+            // То выходящим за пределы символом будет 699-ый
             nextScreenData[i].push(wheels[i][699]);
+            // Если индекс будет большим за 696
           } else if(+indexes[i] > 696){
-            console.log("Здесь есть ошибка", indexes[i]);
+            // И значение не определенно
             if(wheels[i][indexes[i] + j - 1] === undefined) {
+              // То мы подгружаем начальные символы
               nextScreenData[i].push(wheels[i][counter]);
               counter++;
+            } else {
+              // Иначе делаем все по норме.
+              nextScreenData[i].push(wheels[i][indexes[i] + j - 1]);
             }
+          } else {
+            nextScreenData[i].push(wheels[i][indexes[i] + j - 1]);
           }
-          nextScreenData[i].push(wheels[i][indexes[i] + j - 1]);
         }
       }
     }
@@ -1288,6 +1298,43 @@ var winCoins,             // Это значение выигрыша.
     bgIMG, firstDarkness,
     newLevel, counter;
 
+    function preloadDoors() {
+      var preload, i, j;
+      // Создаем очередь загрузки.
+      preload = new createjs.LoadQueue();
+      // Загружаем изображения фонов для холстов.
+      for ( i = 1; i <= 5; i++ ) {
+        var roomPath = "img/bonuses/room" + i + "/";
+        preload.loadFile(roomPath + "2.png");
+        preload.loadFile(roomPath + "3.png");
+        preload.loadFile(roomPath + "4.png");
+        preload.loadFile(roomPath + "5.png");
+        preload.loadFile(roomPath + "x.png");
+        preload.loadFile(roomPath + "bg.png");
+        if ( i !== 5 ) {
+          preload.loadFile(roomPath + "win.png");
+          preload.loadFile(roomPath + "fail.png");
+          preload.loadFile(roomPath + "doors2.png");
+        }
+        if ( i === 1 ) {
+          preload.loadFile(roomPath + "door1.png");
+          preload.loadFile(roomPath + "door2.png");
+          preload.loadFile(roomPath + "door3.png");
+          preload.loadFile(roomPath + "door4.png");
+          preload.loadFile(roomPath + "door5.png");
+        }
+        if ( i === 5 ) {
+          preload.loadFile(roomPath + "chest1gif.png");
+          preload.loadFile(roomPath + "chest3gif.png");
+          preload.loadFile(roomPath + "chest5gif.png");
+          preload.loadFile(roomPath + "moneti.png");
+          preload.loadFile(roomPath + "svet.png");
+          preload.loadFile(roomPath + "muha.png");
+          preload.loadFile(roomPath + "stolb.png");
+        }
+      }
+    }
+
     // Очистим экраны.
     counter = 0;
 
@@ -1301,16 +1348,22 @@ var winCoins,             // Это значение выигрыша.
     // Создаем и запускаем начальную темноту.
     firstDarkness = new createjs.Shape();
     firstDarkness.graphics.beginFill("#000").drawRect(0, 0, 1920, 1080);
-    createjs.Tween.get(firstDarkness)
-    .to({alpha: 0}, 1000);
+    if (+levelNumber === 1) {
+      preloadDoors();
+      createjs.Tween.get(firstDarkness)
+      .to({alpha: 0}, 3000);
+    } else {
+      createjs.Tween.get(firstDarkness)
+      .to({alpha: 0}, 1000);
+    }
 
     // Здесь мы разбираем массив бонусов.
-    // var bonusString = bonusResult[0].BonusSteps;
-    // var bonusArray = bonusString.split(",");
-    // bonusArray = bonusArray.map(function(bonus){
-    //   return parseInt(bonus);
-    // });
-    // console.log(bonusArray);
+    var bonusString = bonusResult[0].BonusSteps;
+    var bonusArray = bonusString.split(",");
+    bonusArray = bonusArray.map(function(bonus){
+      return parseInt(bonus);
+    });
+    console.log(bonusArray);
 
     bgIMG = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/bg.png");
     // Изображение победы.
@@ -1319,18 +1372,18 @@ var winCoins,             // Это значение выигрыша.
     failIMG = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/fail.png");
 
     // Если есть бонус, то загружаем победный экран, и увеличиваем уровень.
-    // if (bonusArray[levelNumber - 1]) {doorsStage.addChild(winIMG); newLevel = levelNumber + 1;}
-    // else {doorsStage.addChild(failIMG)}
+    if (bonusArray[levelNumber - 1]) {doorsStage.addChild(winIMG); newLevel = levelNumber + 1;}
+    else {doorsStage.addChild(failIMG)}
 
     // Создаем бонусную надпись.
-    // winBonus = new createjs.Container();
-    // winBonus.scaleX = 0.7; winBonus.scaleY = 0.7;
-    // winBonus.alpha = 0.2;
-    // winBonus.x = 732; winBonus.y = 440;
-    // multiply = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/x.png");
-    // bonusNumber = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/" + bonusArray[levelNumber - 1] + ".png");;
-    // bonusNumber.x = 200; bonusNumber.y = -75;
-    // winBonus.addChild(multiply, bonusNumber);
+    winBonus = new createjs.Container();
+    winBonus.scaleX = 0.7; winBonus.scaleY = 0.7;
+    winBonus.alpha = 0.2;
+    winBonus.x = 732; winBonus.y = 440;
+    multiply = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/x.png");
+    bonusNumber = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/" + bonusArray[levelNumber - 1] + ".png");;
+    bonusNumber.x = 200; bonusNumber.y = -75;
+    winBonus.addChild(multiply, bonusNumber);
 
 
       // Добавим двери.
@@ -1801,9 +1854,96 @@ var winCoins,             // Это значение выигрыша.
 
     var room5 = {};
 
+    var svetData = {
+      images: ["img/bonuses/room5/svet.png"],
+      frames: {width: 296, height: 304},
+      framerate: 12,
+      animations: {
+        open: [0, 9]
+      }
+    };
+    room5.svet = new createjs.Sprite(new createjs.SpriteSheet(svetData), "open");
+    room5.svet.alpha = 0;
+    room5.svet.stop();
+
+    room5.svet1 = room5.svet.clone();
+    room5.svet1.x = 375; room5.svet1.y = 520;
+    room5.svet2 = room5.svet.clone();
+    room5.svet2.x = 590; room5.svet2.y = 510;
+    room5.svet3 = room5.svet.clone();
+    room5.svet3.x = 815; room5.svet3.y = 510;
+    room5.svet4 = room5.svet.clone();
+    room5.svet4.x = 1035; room5.svet4.y = 510;
+    room5.svet5 = room5.svet.clone();
+    room5.svet5.x = 1245; room5.svet5.y = 520;
+
+    room5.stolb = new createjs.Bitmap("img/bonuses/room5/stolb.png");
+    room5.stolb.alpha = 0;
+
+    room5.stolb1 = room5.stolb.clone();
+    room5.stolb1.x = 410; room5.stolb1.y = -250;
+    room5.stolb2 = room5.stolb.clone();
+    room5.stolb2.x = 625; room5.stolb2.y = -250;
+    room5.stolb3 = room5.stolb.clone();
+    room5.stolb3.x = 845; room5.stolb3.y = -250;
+    room5.stolb4 = room5.stolb.clone();
+    room5.stolb4.x = 1065; room5.stolb4.y = -250;
+    room5.stolb5 = room5.stolb.clone();
+    room5.stolb5.x = 1275; room5.stolb5.y = -250;
+
+    var monetkiData = {
+      images: ["img/bonuses/room5/moneti.png"],
+      frames: {width: 129, height: 663},
+      framerate: 12,
+      animations: {
+        open: [0, 21, "stop"],
+        stop: 21
+      }
+    };
+    room5.monetki = new createjs.Sprite(new createjs.SpriteSheet(monetkiData), "open");
+    room5.monetki.alpha = 0;
+    room5.monetki.stop();
+
+    room5.monetki1 = room5.monetki.clone();
+    room5.monetki1.x = 445;
+    room5.monetki2 = room5.monetki.clone();
+    room5.monetki2.x = 660;
+    room5.monetki3 = room5.monetki.clone();
+    room5.monetki3.x = 880;
+    room5.monetki4 = room5.monetki.clone();
+    room5.monetki4.x = 1105;
+    room5.monetki5 = room5.monetki.clone();
+    room5.monetki5.x = 1310;
+
+    var muhaData = {
+      images: ["img/bonuses/room5/muha.png"],
+      frames: {width: 134, height: 416},
+      framerate: 12,
+      animations: {
+        open: [0, 29, "stop"],
+        stop: 29
+      }
+    };
+    room5.muha = new createjs.Sprite(new createjs.SpriteSheet(muhaData), "open");
+    room5.muha.alpha = 0;
+    room5.muha.stop();
+
+    room5.muha1 = room5.muha.clone();
+    room5.muha1.x = 410; room5.muha1.y = 235;
+    room5.muha2 = room5.muha.clone();
+    room5.muha2.x = 625; room5.muha2.y = 225;
+    room5.muha3 = room5.muha.clone();
+    room5.muha3.x = 845; room5.muha3.y = 225;
+    room5.muha4 = room5.muha.clone();
+    room5.muha4.x = 1065; room5.muha4.y = 225;
+    room5.muha5 = room5.muha.clone();
+    room5.muha5.x = 1275; room5.muha5.y = 235;
+
+
+
     var chest1Data = {
-      images: ["img/bonuses/room5/chest1.png"],
-      frames: {width: 193, height: 190},
+      images: ["img/bonuses/room5/chest1gif.png"],
+      frames: {width: 220, height: 220},
       framerate: 12,
       animations: {
         open: [0, 5, "stop"],
@@ -1812,41 +1952,62 @@ var winCoins,             // Это значение выигрыша.
     };
     var chest1SpriteSheet = new createjs.SpriteSheet(chest1Data);
     room5.chest1 = new createjs.Sprite(chest1SpriteSheet, "open");
-    room5.chest1.x = 435; room5.chest1.y = 590; room5.chest1.stop();
-    room5.chest1.scaleX = 0.8; room5.chest1.scaleY = 0.8;
-
+    room5.chest1.x = 425; room5.chest1.y = 570;
+    room5.chest1.scaleX = 0.84; room5.chest1.scaleY = 0.84;
+    room5.chest1.stop();
     room5.chest1.on("click", function(){
       if (counter === 0) {
         this.play();
-        room5.muha.play();
+        if (bonusArray[levelNumber - 1]) {
+          doorsStage.addChild(room5.svet1, room5.chest1, room5.monetki1, room5.stolb1);
+          createjs.Tween.get(room5.svet1)
+            .to({alpha: 1}, 200);
+          createjs.Tween.get(room5.monetki1)
+            .to({alpha: 1}, 500);
+          createjs.Tween.get(room5.stolb1)
+            .wait(200)
+            .to({alpha: 0.8}, 300);
+
+          room5.monetki1.on("change", function(){
+            if (+parseInt(room5.monetki1.currentAnimationFrame) === 21) {
+              createjs.Tween.get(room5.monetki1)
+                .to({alpha: 0}, 200)
+            }
+          });
+
+          setTimeout(room5.monetki1.play.bind(room5.monetki1), 200);
+          room5.svet1.play();
+
+          doorsStage.addChild(winBonus);
+          createjs.Tween.get(winBonus)
+          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+
+          setTimeout(returnToMainScreen.bind(null), 4000);
+
+        }
+        else {
+          doorsStage.addChild(room5.chest1, room5.muha1);
+          createjs.Tween.get(room5.muha1)
+          .to({alpha: 1}, 500);
+          setTimeout(room5.muha1.play.bind(room5.muha1), 300);
+          room5.muha1.on("change", function(){
+            if (+parseInt(room5.muha1.currentAnimationFrame) === 29) {
+              createjs.Tween.get(room5.muha1)
+              .to({alpha: 0}, 200)
+            }
+          });
+
+          setTimeout(returnToMainScreen.bind(null), 4000);
+
+        }
         counter++;
       }
     });
 
-    var chest2Data = {
-      images: ["img/bonuses/room5/chest2.png"],
-      frames: {width: 168, height: 182},
-      framerate: 12,
-      animations: {
-        open: [0, 5, "stop"],
-        stop: 5
-      }
-    };
-    var chest2SpriteSheet = new createjs.SpriteSheet(chest2Data);
-    room5.chest2 = new createjs.Sprite(chest2SpriteSheet, "open");
-    room5.chest2.x = 670; room5.chest2.y = 595; room5.chest2.stop();
-    room5.chest2.scaleX = 0.8; room5.chest2.scaleY = 0.8;
-
-    room5.chest2.on("click", function(){
-      if (counter === 0) {
-        this.play();
-        counter++;
-      }
-    });
 
     var chest3Data = {
-      images: ["img/bonuses/room5/chest3.png"],
-      frames: {width: 159, height: 183},
+      images: ["img/bonuses/room5/chest3gif.png"],
+      frames: {width: 220, height: 220},
       framerate: 12,
       animations: {
         open: [0, 5, "stop"],
@@ -1855,54 +2016,231 @@ var winCoins,             // Это значение выигрыша.
     };
     var chest3SpriteSheet = new createjs.SpriteSheet(chest3Data);
     room5.chest3 = new createjs.Sprite(chest3SpriteSheet, "open");
-    room5.chest3.x = 890; room5.chest3.y = 595; room5.chest3.stop();
+    room5.chest3.x = 865; room5.chest3.y = 575;
     room5.chest3.scaleX = 0.8; room5.chest3.scaleY = 0.8;
-
+    room5.chest3.stop();
     room5.chest3.on("click", function(){
       if (counter === 0) {
         this.play();
+        if (bonusArray[levelNumber - 1]) {
+          doorsStage.addChild(room5.svet3, room5.chest3, room5.monetki3, room5.stolb3);
+          createjs.Tween.get(room5.svet3)
+            .to({alpha: 1}, 200);
+          createjs.Tween.get(room5.monetki3)
+            .to({alpha: 1}, 500);
+          createjs.Tween.get(room5.stolb3)
+            .wait(200)
+            .to({alpha: 0.8}, 300);
+
+          room5.monetki3.on("change", function(){
+            if (+parseInt(room5.monetki3.currentAnimationFrame) === 21) {
+              createjs.Tween.get(room5.monetki3)
+                .to({alpha: 0}, 200)
+            }
+          });
+
+          setTimeout(room5.monetki3.play.bind(room5.monetki3), 200);
+          room5.svet3.play();
+
+          doorsStage.addChild(winBonus);
+          createjs.Tween.get(winBonus)
+          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+
+          setTimeout(returnToMainScreen.bind(null), 4000);
+
+        }
+        else {
+          doorsStage.addChild(room5.chest3, room5.muha3);
+          createjs.Tween.get(room5.muha3)
+          .to({alpha: 1}, 500);
+          setTimeout(room5.muha3.play.bind(room5.muha3), 300);
+          room5.muha3.on("change", function(){
+            if (+parseInt(room5.muha3.currentAnimationFrame) === 29) {
+              createjs.Tween.get(room5.muha3)
+              .to({alpha: 0}, 200)
+            }
+          });
+
+          setTimeout(returnToMainScreen.bind(null), 4000);
+
+        }
         counter++;
       }
     });
 
-    var chest4Data = {
-      images: ["img/bonuses/room5/chest4.png"],
-      frames: {width: 168, height: 182},
+
+    room5.chest2 = room5.chest3.clone();
+    room5.chest2.x = 645; room5.chest2.y = 575;
+    room5.chest2.scaleX = 0.8; room5.chest2.scaleY = 0.8;
+    room5.chest2.on("click", function(){
+      if (counter === 0) {
+        this.play();
+        if (bonusArray[levelNumber - 1]) {
+          doorsStage.addChild(room5.svet2, room5.chest2, room5.monetki2, room5.stolb2);
+          createjs.Tween.get(room5.svet2)
+            .to({alpha: 1}, 200);
+          createjs.Tween.get(room5.monetki2)
+            .to({alpha: 1}, 500);
+          createjs.Tween.get(room5.stolb2)
+            .wait(200)
+            .to({alpha: 0.8}, 300);
+
+          room5.monetki2.on("change", function(){
+            if (+parseInt(room5.monetki2.currentAnimationFrame) === 21) {
+              createjs.Tween.get(room5.monetki2)
+                .to({alpha: 0}, 200)
+            }
+          });
+
+          setTimeout(room5.monetki2.play.bind(room5.monetki2), 200);
+          room5.svet2.play();
+
+          doorsStage.addChild(winBonus);
+          createjs.Tween.get(winBonus)
+          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+
+          setTimeout(returnToMainScreen.bind(null), 4000);
+
+        }
+        else {
+          doorsStage.addChild(room5.chest2, room5.muha2);
+          createjs.Tween.get(room5.muha2)
+          .to({alpha: 1}, 500);
+          setTimeout(room5.muha2.play.bind(room5.muha2), 300);
+          room5.muha2.on("change", function(){
+            if (+parseInt(room5.muha2.currentAnimationFrame) === 29) {
+              createjs.Tween.get(room5.muha2)
+              .to({alpha: 0}, 200)
+            }
+          });
+
+          setTimeout(returnToMainScreen.bind(null), 4000);
+
+        }
+        counter++;
+      }
+    });
+
+
+    room5.chest4 = room5.chest3.clone();
+    room5.chest4.x = 1093; room5.chest4.y = 575;
+    room5.chest4.scaleX = 0.8; room5.chest4.scaleY = 0.8;
+    room5.chest4.on("click", function(){
+      if (counter === 0) {
+        this.play();
+        if (bonusArray[levelNumber - 1]) {
+          doorsStage.addChild(room5.svet4, room5.chest4, room5.monetki4, room5.stolb4);
+          createjs.Tween.get(room5.svet4)
+            .to({alpha: 1}, 200);
+          createjs.Tween.get(room5.monetki4)
+            .to({alpha: 1}, 500);
+          createjs.Tween.get(room5.stolb4)
+            .wait(200)
+            .to({alpha: 0.8}, 300);
+
+          room5.monetki4.on("change", function(){
+            if (+parseInt(room5.monetki4.currentAnimationFrame) === 21) {
+              createjs.Tween.get(room5.monetki4)
+                .to({alpha: 0}, 200)
+            }
+          });
+
+          setTimeout(room5.monetki4.play.bind(room5.monetki4), 200);
+          room5.svet4.play();
+
+          doorsStage.addChild(winBonus);
+          createjs.Tween.get(winBonus)
+          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+
+          setTimeout(returnToMainScreen.bind(null), 4000);
+
+        }
+        else {
+          doorsStage.addChild(room5.chest4, room5.muha4);
+          createjs.Tween.get(room5.muha4)
+          .to({alpha: 1}, 500);
+          setTimeout(room5.muha4.play.bind(room5.muha4), 300);
+          room5.muha4.on("change", function(){
+            if (+parseInt(room5.muha4.currentAnimationFrame) === 29) {
+              createjs.Tween.get(room5.muha4)
+              .to({alpha: 0}, 200)
+            }
+          });
+
+          setTimeout(returnToMainScreen.bind(null), 4000);
+
+        }
+        counter++;
+      }
+    });
+
+
+    var chest5Data = {
+      images: ["img/bonuses/room5/chest5gif.png"],
+      frames: {width: 220, height: 220},
       framerate: 12,
       animations: {
         open: [0, 5, "stop"],
         stop: 5
       }
     };
-    var chest4SpriteSheet = new createjs.SpriteSheet(chest4Data);
-    room5.chest4 = new createjs.Sprite(chest4SpriteSheet, "open");
-    room5.chest4.x = 1100; room5.chest4.y = 595; room5.chest4.stop();
-    room5.chest4.scaleX = 0.8; room5.chest4.scaleY = 0.8;
-
-    room5.chest4.on("click", function(){
+    var chest5SpriteSheet = new createjs.SpriteSheet(chest5Data);
+    room5.chest5 = new createjs.Sprite(chest5SpriteSheet, "open");
+    room5.chest5.x = 1305; room5.chest5.y = 570;
+    room5.chest5.scaleX = 0.84; room5.chest5.scaleY = 0.84;
+    room5.chest5.stop();
+    room5.chest5.on("click", function(){
       if (counter === 0) {
         this.play();
+        if (bonusArray[levelNumber - 1]) {
+          doorsStage.addChild(room5.svet5, room5.chest5, room5.monetki5, room5.stolb5);
+          createjs.Tween.get(room5.svet5)
+            .to({alpha: 1}, 200);
+          createjs.Tween.get(room5.monetki5)
+            .to({alpha: 1}, 500);
+          createjs.Tween.get(room5.stolb5)
+            .wait(200)
+            .to({alpha: 0.8}, 300);
+
+          room5.monetki5.on("change", function(){
+            if (+parseInt(room5.monetki5.currentAnimationFrame) === 21) {
+              createjs.Tween.get(room5.monetki5)
+                .to({alpha: 0}, 200)
+            }
+          });
+
+          setTimeout(room5.monetki5.play.bind(room5.monetki5), 200);
+          room5.svet5.play();
+
+          doorsStage.addChild(winBonus);
+          createjs.Tween.get(winBonus)
+          .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
+
+          setTimeout(returnToMainScreen.bind(null), 4000);
+
+        }
+        else {
+          doorsStage.addChild(room5.chest5, room5.muha5);
+          createjs.Tween.get(room5.muha5)
+          .to({alpha: 1}, 500);
+          setTimeout(room5.muha5.play.bind(room5.muha5), 300);
+          room5.muha5.on("change", function(){
+            if (+parseInt(room5.muha5.currentAnimationFrame) === 29) {
+              createjs.Tween.get(room5.muha5)
+              .to({alpha: 0}, 200)
+            }
+          });
+
+          setTimeout(returnToMainScreen.bind(null), 4000);
+
+        }
         counter++;
       }
     });
 
-    var muhaData = {
-      images: ["img/bonuses/room5/muha.png"],
-      frames: {width: 134, height: 416},
-      framerate: 24,
-      animations: {
-        open: [0, 29, "stop"],
-        stop: 29
-      }
-    };
-    var muhaSpriteSheet = new createjs.SpriteSheet(muhaData);
-    room5.muha = new createjs.Sprite(muhaSpriteSheet, "open");
-    room5.muha.x = 450; room5.muha.y = 300; room5.muha.stop();
-
-
 
     if(levelNumber === 5) {
-      doorsStage.addChild(bgIMG, room5.chest1, room5.chest2, room5.chest3, room5.chest4, room5.muha, firstDarkness);
+      doorsStage.addChild(bgIMG, room5.chest1, room5.chest2, room5.chest3, room5.chest4, room5.chest5, firstDarkness);
       bgIMG.on("click", function(){
         setTimeout(returnToMainScreen.bind(null), 1500);
       });
@@ -1922,7 +2260,6 @@ var winCoins,             // Это значение выигрыша.
 
 
   $("#withoutSound").click(function(){
-    doorsLevel(5);
     if(createjs.Sound.muted) {
       createjs.Sound.muted = false;
       $(this)[0].innerHTML = "Выключить звук!!!";

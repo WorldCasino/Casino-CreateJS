@@ -108,8 +108,7 @@ gulp.task('build', [
     'js:build',
     'compass:build',
     'css:build',
-    'fonts:build',
-    'img:build'
+    'fonts:build'
 ]);
 
 gulp.task('watch', function(){
@@ -124,9 +123,6 @@ gulp.task('watch', function(){
     });
     watch([path.src.css], function(event, cb) {
         gulp.start('css:build');
-    });
-    watch([path.watch.img], function(event, cb) {
-        gulp.start('img:build');
     });
     watch([path.watch.fonts], function(event, cb) {
         gulp.start('fonts:build');
