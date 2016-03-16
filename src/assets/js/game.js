@@ -25,9 +25,9 @@ $(document).ready(init);
 
 function init(){
 
-  gameStage.x = 562;
-  gameStage.y = 126;
-  panelStage.addChild(gameStage);
+  // gameStage.x = 562;
+  // gameStage.y = 126;
+  // panelStage.addChild(gameStage);
   // panelStage.alpha = 0;
   bgStage.alpha = 0;
 
@@ -689,7 +689,7 @@ var winCoins,             // Это значение выигрыша.
           url: url + '_SetBet/' + sessionID + '/' + betValue.text,
           dataType: 'JSONP',
           type: 'GET',
-          success: function() {
+          success: function(data) {
           }
         });
       });
@@ -993,7 +993,7 @@ var winCoins,             // Это значение выигрыша.
 	function showNewScreen() {
     // При загрузке нового экрана мы убираем все линии с экрана и убираем тени с номеров линий.
 		for (var j = 0; j < 21; j++) {
-			lineImages[j].alpha = 0;
+			// lineImages[j].alpha = 0;
       lineWinImages[j].alpha = 0;
       if (lineNumbers[j].shadow) {lineNumbers[j].shadow.offsetX = lineNumbers[j].shadow.offsetY = lineNumbers[j].shadow.blur = 0}
 		}
@@ -1290,10 +1290,11 @@ var winCoins,             // Это значение выигрыша.
 
   }
 
+  var winBonus;
   function doorsLevel(levelNumber) {
 
     var door1, door2, door3, door4, door5,
-    multiply, bonusNumber, winBonus,
+    multiply, bonusNumber,
     winIMG, failIMG, win_OR_fail,
     bgIMG, firstDarkness,
     newLevel, counter;
@@ -1372,8 +1373,10 @@ var winCoins,             // Это значение выигрыша.
     failIMG = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/fail.png");
 
     // Если есть бонус, то загружаем победный экран, и увеличиваем уровень.
-    if (bonusArray[levelNumber - 1]) {doorsStage.addChild(winIMG); newLevel = levelNumber + 1;}
-    else {doorsStage.addChild(failIMG)}
+    if(levelNumber !== 5) {
+      if (bonusArray[levelNumber - 1]) {doorsStage.addChild(winIMG); newLevel = levelNumber + 1;}
+      else {doorsStage.addChild(failIMG)}
+    }
 
     // Создаем бонусную надпись.
     winBonus = new createjs.Container();
@@ -1381,9 +1384,11 @@ var winCoins,             // Это значение выигрыша.
     winBonus.alpha = 0.2;
     winBonus.x = 732; winBonus.y = 440;
     multiply = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/x.png");
-    bonusNumber = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/" + bonusArray[levelNumber - 1] + ".png");;
-    bonusNumber.x = 200; bonusNumber.y = -75;
-    winBonus.addChild(multiply, bonusNumber);
+    if(bonusArray[levelNumber - 1]) {
+      bonusNumber = new createjs.Bitmap("img/bonuses/room"+ levelNumber + "/" + bonusArray[levelNumber - 1] + ".png");;
+      bonusNumber.x = 200; bonusNumber.y = -75;
+      winBonus.addChild(multiply, bonusNumber);
+    }
 
 
       // Добавим двери.
@@ -1422,7 +1427,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 1500);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1439,7 +1444,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 1500);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1456,7 +1461,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 1500);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1473,7 +1478,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 1500);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1490,7 +1495,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 3000, Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1544,7 +1549,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1560,7 +1565,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1576,7 +1581,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1592,7 +1597,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1608,7 +1613,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1662,7 +1667,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1678,7 +1683,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1694,7 +1699,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1710,7 +1715,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1726,7 +1731,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1780,7 +1785,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1796,7 +1801,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1812,7 +1817,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
       });
@@ -1828,7 +1833,7 @@ var winCoins,             // Это значение выигрыша.
             .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
             setTimeout(doorsLevel.bind(null, newLevel), 2000);
           } else {
-            setTimeout(returnToMainScreen.bind(null), 1500);
+            returnToMainScreen();
           }
         }
 
@@ -1896,7 +1901,8 @@ var winCoins,             // Это значение выигрыша.
       frames: {width: 129, height: 663},
       framerate: 12,
       animations: {
-        open: [0, 21, "stop"],
+        open: [0, 12, "fly"],
+        fly: [7, 11],
         stop: 21
       }
     };
@@ -1968,12 +1974,12 @@ var winCoins,             // Это значение выигрыша.
             .wait(200)
             .to({alpha: 0.8}, 300);
 
-          room5.monetki1.on("change", function(){
-            if (+parseInt(room5.monetki1.currentAnimationFrame) === 21) {
-              createjs.Tween.get(room5.monetki1)
-                .to({alpha: 0}, 200)
-            }
-          });
+          // room5.monetki1.on("change", function(){
+          //   if (+parseInt(room5.monetki1.currentAnimationFrame) === 21) {
+          //     createjs.Tween.get(room5.monetki1)
+          //       .to({alpha: 0}, 200)
+          //   }
+          // });
 
           setTimeout(room5.monetki1.play.bind(room5.monetki1), 200);
           room5.svet1.play();
@@ -1982,7 +1988,7 @@ var winCoins,             // Это значение выигрыша.
           createjs.Tween.get(winBonus)
           .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
 
-          setTimeout(returnToMainScreen.bind(null), 4000);
+          returnToMainScreen();
 
         }
         else {
@@ -1997,7 +2003,7 @@ var winCoins,             // Это значение выигрыша.
             }
           });
 
-          setTimeout(returnToMainScreen.bind(null), 4000);
+          returnToMainScreen();
 
         }
         counter++;
@@ -2032,12 +2038,12 @@ var winCoins,             // Это значение выигрыша.
             .wait(200)
             .to({alpha: 0.8}, 300);
 
-          room5.monetki3.on("change", function(){
-            if (+parseInt(room5.monetki3.currentAnimationFrame) === 21) {
-              createjs.Tween.get(room5.monetki3)
-                .to({alpha: 0}, 200)
-            }
-          });
+          // room5.monetki3.on("change", function(){
+          //   if (+parseInt(room5.monetki3.currentAnimationFrame) === 21) {
+          //     createjs.Tween.get(room5.monetki3)
+          //       .to({alpha: 0}, 200)
+          //   }
+          // });
 
           setTimeout(room5.monetki3.play.bind(room5.monetki3), 200);
           room5.svet3.play();
@@ -2046,7 +2052,7 @@ var winCoins,             // Это значение выигрыша.
           createjs.Tween.get(winBonus)
           .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
 
-          setTimeout(returnToMainScreen.bind(null), 4000);
+          returnToMainScreen();
 
         }
         else {
@@ -2061,7 +2067,7 @@ var winCoins,             // Это значение выигрыша.
             }
           });
 
-          setTimeout(returnToMainScreen.bind(null), 4000);
+          returnToMainScreen();
 
         }
         counter++;
@@ -2085,12 +2091,12 @@ var winCoins,             // Это значение выигрыша.
             .wait(200)
             .to({alpha: 0.8}, 300);
 
-          room5.monetki2.on("change", function(){
-            if (+parseInt(room5.monetki2.currentAnimationFrame) === 21) {
-              createjs.Tween.get(room5.monetki2)
-                .to({alpha: 0}, 200)
-            }
-          });
+          // room5.monetki2.on("change", function(){
+          //   if (+parseInt(room5.monetki2.currentAnimationFrame) === 21) {
+          //     createjs.Tween.get(room5.monetki2)
+          //       .to({alpha: 0}, 200)
+          //   }
+          // });
 
           setTimeout(room5.monetki2.play.bind(room5.monetki2), 200);
           room5.svet2.play();
@@ -2099,7 +2105,7 @@ var winCoins,             // Это значение выигрыша.
           createjs.Tween.get(winBonus)
           .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
 
-          setTimeout(returnToMainScreen.bind(null), 4000);
+          returnToMainScreen();
 
         }
         else {
@@ -2114,7 +2120,7 @@ var winCoins,             // Это значение выигрыша.
             }
           });
 
-          setTimeout(returnToMainScreen.bind(null), 4000);
+          returnToMainScreen();
 
         }
         counter++;
@@ -2138,12 +2144,12 @@ var winCoins,             // Это значение выигрыша.
             .wait(200)
             .to({alpha: 0.8}, 300);
 
-          room5.monetki4.on("change", function(){
-            if (+parseInt(room5.monetki4.currentAnimationFrame) === 21) {
-              createjs.Tween.get(room5.monetki4)
-                .to({alpha: 0}, 200)
-            }
-          });
+          // room5.monetki4.on("change", function(){
+          //   if (+parseInt(room5.monetki4.currentAnimationFrame) === 21) {
+          //     createjs.Tween.get(room5.monetki4)
+          //       .to({alpha: 0}, 200)
+          //   }
+          // });
 
           setTimeout(room5.monetki4.play.bind(room5.monetki4), 200);
           room5.svet4.play();
@@ -2152,7 +2158,7 @@ var winCoins,             // Это значение выигрыша.
           createjs.Tween.get(winBonus)
           .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
 
-          setTimeout(returnToMainScreen.bind(null), 4000);
+          returnToMainScreen();
 
         }
         else {
@@ -2167,7 +2173,7 @@ var winCoins,             // Это значение выигрыша.
             }
           });
 
-          setTimeout(returnToMainScreen.bind(null), 4000);
+          returnToMainScreen();
 
         }
         counter++;
@@ -2202,12 +2208,12 @@ var winCoins,             // Это значение выигрыша.
             .wait(200)
             .to({alpha: 0.8}, 300);
 
-          room5.monetki5.on("change", function(){
-            if (+parseInt(room5.monetki5.currentAnimationFrame) === 21) {
-              createjs.Tween.get(room5.monetki5)
-                .to({alpha: 0}, 200)
-            }
-          });
+          // room5.monetki5.on("change", function(){
+          //   if (+parseInt(room5.monetki5.currentAnimationFrame) === 21) {
+          //     createjs.Tween.get(room5.monetki5)
+          //       .to({alpha: 0}, 200)
+          //   }
+          // });
 
           setTimeout(room5.monetki5.play.bind(room5.monetki5), 200);
           room5.svet5.play();
@@ -2216,7 +2222,7 @@ var winCoins,             // Это значение выигрыша.
           createjs.Tween.get(winBonus)
           .to({scaleX:1, scaleY:1, alpha: 1}, 1000, createjs.Ease.bounceOut);
 
-          setTimeout(returnToMainScreen.bind(null), 4000);
+          returnToMainScreen();
 
         }
         else {
@@ -2231,7 +2237,7 @@ var winCoins,             // Это значение выигрыша.
             }
           });
 
-          setTimeout(returnToMainScreen.bind(null), 4000);
+          returnToMainScreen();
 
         }
         counter++;
@@ -2241,12 +2247,19 @@ var winCoins,             // Это значение выигрыша.
 
     if(levelNumber === 5) {
       doorsStage.addChild(bgIMG, room5.chest1, room5.chest2, room5.chest3, room5.chest4, room5.chest5, firstDarkness);
-      bgIMG.on("click", function(){
-        setTimeout(returnToMainScreen.bind(null), 1500);
-      });
     }
 
     function returnToMainScreen() {
+      if(levelNumber === 5 && bonusArray[4]) {
+        bigWin(winCoins, PANEL_WIDTH, PANEL_HEIGHT, doorsStage);
+        setTimeout(removeDoorLevel.bind(null), 9000);
+      } else {
+        setTimeout(removeDoorLevel.bind(null), 2000);
+      }
+
+    }
+
+    function removeDoorLevel() {
       $("#doorsCanvas").removeClass("first");
       doorsStage.removeAllChildren();
       doorsStage.alpha = 0;
@@ -2257,7 +2270,133 @@ var winCoins,             // Это значение выигрыша.
 
   }
 
+  function bigWin(winNumber, WIDTH, HEIGHT, STAGE) {
 
+    var darkness = new createjs.Shape();
+    darkness.graphics.beginFill("#000").drawRect(0, 0, WIDTH, HEIGHT);
+    darkness.alpha = 0;
+    STAGE.addChild(darkness);
+
+    if(winBonus) {STAGE.removeChild(winBonus)}
+
+    var monetaData = {
+      images: ["img/bonuses/BigWin/moneta.png"],
+      frames: {width: 148, height: 195},
+      framerate: 16,
+      animations: {
+        open: [0, 15]
+      }
+    };
+    var monetaOpen = new createjs.Sprite(new createjs.SpriteSheet(monetaData), "open");
+    var monetaArray = [];
+    var numberOfMonetki = (Math.random()+0.5)*winNumber/3;
+
+    for (var i = 0; i < numberOfMonetki; i++) {
+      var newMoneta = monetaOpen.clone();
+      newMoneta.stop();
+      newMoneta.alpha = 0;
+      newMoneta.x = Math.random()*WIDTH;
+      newMoneta.y = (Math.random() - 0.5)*HEIGHT;
+      newMoneta.scaleX = newMoneta.scaleY = Math.random()+0.3;
+      if(newMoneta.scaleX > 1) newMoneta.scaleX = newMoneta.scaleY = 1;
+      newMoneta.rotation = (Math.random()-0.5)*90;
+      newMoneta.speed = (Math.random()+0.5)*5;
+      createjs.Tween.get(newMoneta, {loop: true})
+      .to({y: newMoneta.y + 1.5*HEIGHT}, 15000/newMoneta.speed);
+      monetaArray.push(newMoneta);
+      STAGE.addChild(newMoneta);
+    }
+
+    var winMax = setInterval(winUp.bind(null), 1500*4/winNumber);
+    var newNumber, oldNumber = 0;
+    function winUp() {
+      newNumber = Math.ceil(oldNumber + Math.random()*10)
+      oldNumber = newNumber;
+      if (newNumber > winNumber) {
+        newNumber = winNumber;
+        oldNumber = 0;
+        clearInterval(winMax);
+      }
+    }
+
+    var winTextContainer = new createjs.Container();
+    function drawWinText() {
+      var winArray = String(newNumber).split("");
+      winTextContainer.removeAllChildren();
+      winTextContainer.x = WIDTH/2 - winArray.length*256/2;
+      winTextContainer.y = HEIGHT/2 - 350/2;
+      for (var i = 0; i < winArray.length; i++) {
+        var newWinNumber = new createjs.Bitmap("img/bonuses/BigWin/" + winArray[i] + ".png");
+        newWinNumber.x = i*256;
+        winTextContainer.addChild(newWinNumber);
+      }
+      STAGE.addChild(winTextContainer);
+      if (newNumber === winCoins) {
+        clearInterval(drawWinInterval);
+        createjs.Tween.get(winTextContainer, {loop: true})
+          .to({alpha: 0.8, scaleX: 0.9, scaleY: 0.9, y: HEIGHT/2 - 315/2, x: WIDTH/2 - winArray.length*230/2}, 500)
+          .to({alpha: 1, scaleX: 1.1, scaleY: 1.1, y: HEIGHT/2 - 385/2, x: WIDTH/2 - winArray.length*282/2}, 500)
+          .to({alpha: 1, scaleX: 1, scaleY: 1, y: HEIGHT/2 - 350/2, x: WIDTH/2 - winArray.length*256/2}, 500)
+      }
+    }
+    var drawWinInterval = setInterval(drawWinText.bind(null), 100);
+
+    setTimeout(mainBigWin.bind(null), 2000);
+
+    function mainBigWin() {
+
+      darkness.alpha = 0.5;
+
+      for (var i = 0; i < numberOfMonetki; i++) {
+
+        monetaArray[i].alpha = 1;
+        setTimeout(monetaArray[i].play.bind(monetaArray[i]), Math.random()*300);
+      }
+
+      var bigWinText = new createjs.Bitmap("img/bonuses/BigWin/BigWin.png");
+      bigWinText.x = WIDTH/2; bigWinText.y = HEIGHT*0.2;
+      bigWinText.scaleX = bigWinText.scaleY = 0;
+      STAGE.addChild(bigWinText);
+      createjs.Tween.get(bigWinText)
+      .to({scaleX: 1, scaleY: 1, x: WIDTH/2 - 500, y: HEIGHT*0.2 - 150}, 500)
+      .wait(1500)
+      .to({scaleX: 0, scaleY: 0, x: WIDTH/2, y: HEIGHT*0.3}, 0)
+      .wait(500)
+      .to({scaleX: 1, scaleY: 1, x: WIDTH/2 - 500, y: HEIGHT*0.2 - 150}, 500)
+      .wait(1500)
+      .to({scaleX: 0, scaleY: 0, x: WIDTH/2, y: HEIGHT*0.3}, 0)
+      .wait(500)
+      .to({scaleX: 1, scaleY: 1, x: WIDTH/2 - 500, y: HEIGHT*0.2 - 150}, 500)
+      .wait(500)
+      .call(toAlphaZero)
+      .wait(500)
+      .call(removeBigWin);
+
+      function toAlphaZero() {
+        createjs.Tween.get(bigWinText)
+        .to({alpha: 0}, 500);
+        createjs.Tween.get(darkness)
+        .to({alpha: 0}, 500);
+        createjs.Tween.get(winTextContainer)
+        .to({alpha: 0}, 500);
+        for (var i = 0; i < numberOfMonetki; i++) {
+          createjs.Tween.get(monetaArray[i])
+          .to({alpha: 0}, 500);
+        }
+      }
+
+      function removeBigWin(){
+        for (var i = 0; i < numberOfMonetki; i++) {
+
+          STAGE.removeChild(monetaArray[i]);
+        }
+        STAGE.removeChild(darkness, winTextContainer);
+        clearInterval(drawWinInterval);
+      }
+
+    }
+
+  }
 
   $("#withoutSound").click(function(){
     if(createjs.Sound.muted) {
@@ -2267,6 +2406,10 @@ var winCoins,             // Это значение выигрыша.
       createjs.Sound.muted = true;
       $(this)[0].innerHTML = "Включить звук!!!";
     }
+  });
+
+  $("#bigWin").click(function(){
+    bigWin(1500, PANEL_WIDTH, PANEL_HEIGHT, panelStage);
   });
 
 } // Конец функции Init()
