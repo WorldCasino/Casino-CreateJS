@@ -55,8 +55,8 @@ var spinClicked = false,    // Флаг клика кнопки SPIN.
     autoplayID = [],        // Массив с запущенными автоплеями.
     autoplayIndex = 0;
 
-var   nameOfPlayer = "SomeName" + Math.random()*100,            // Имя игрока (в дальнейшем будет получаться при вводе).
-			url = "http://176.105.103.83:99/JSON/SlotService.svc/",   // URL сервера.
+var   nameOfPlayer = "SomeName",            // Имя игрока (в дальнейшем будет получаться при вводе).
+			url = "http://oldgameservice.bossgs.org/JSON/SlotService.svc/",   // URL сервера.
 			sessionID,                                                // ID игровой сессии (получается при загрузке игры).
 			gameID = 0,                                               // ID игры (получается при загрузке игры).
       linesCoords = [];                                         // Массив с координатами элементов в линиях.
@@ -188,11 +188,13 @@ var winCoins,             // Это значение выигрыша.
     // Проведем их позиционирование относительно того же верхнего угла.
     lampBottomBG.x = -20; lampBottomBG.y = 65;
     lampTopBG.x = 8; lampTopBG.y = 116;
+    var german = new createjs.Bitmap("img/idleGerman2.png");
+    german.set({ x: 150, y: 280, scaleX: 0.8, scaleY: 0.8});
     // Создаем основу панели управления.
     var panelBG = new createjs.Bitmap("img/bg/panelBG.png");
 
     // И нарисуем все это на холсте bgStage в нужном порядке наложения.
-    panelStage.addChild(mainBG, cloudsBG, panelBG, lampTopBG, lampBottomBG, fogBG);
+    panelStage.addChild(mainBG, cloudsBG, panelBG, german, lampTopBG, lampBottomBG, fogBG);
 
     // Создаем задний фон для слотов.
     var gameBG = new createjs.Bitmap("img/bg/gameBG.png");
